@@ -8,8 +8,8 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
-COPY --from=influx /usr/bin/influxd /usr/local/bin/influxd
-COPY --from=influx /usr/bin/influx  /usr/local/bin/influx
+COPY --from=influx /usr/local/bin/influxd /usr/local/bin/influxd
+COPY --from=influx /usr/local/bin/influx  /usr/local/bin/influx
 
 WORKDIR /app
 COPY backend/requirements.txt .
