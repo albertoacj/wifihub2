@@ -1,5 +1,3 @@
-# Copia os binários do InfluxDB 2.x da imagem oficial (multi-arch: o Docker
-# escolhe aarch64/amd64 conforme o host — sem baixar tarball à mão).
 FROM influxdb:2.7 AS influx
 
 FROM python:3.12-slim
