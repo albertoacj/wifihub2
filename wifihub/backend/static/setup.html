@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WifiHub — Setup</title>
+<style>
+  :root{--bg:#0f172a;--card:#1e293b;--card2:#0b1220;--line:#334155;
+        --txt:#e2e8f0;--mut:#94a3b8;--sky:#38bdf8;--ok:#22c55e;--bad:#ef4444;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.5}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:1.5rem;margin:0 0 4px} .sub{color:var(--mut);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:18px;margin-bottom:16px}
+  .card h2{font-size:1rem;margin:0 0 12px;color:var(--sky)}
+  label{display:block;font-size:.8rem;color:var(--mut);margin:10px 0 4px}
+  input{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);
+        border-radius:9px;padding:10px 12px;font-size:.95rem;outline:none}
+  input:focus{border-color:var(--sky)}
+  .row{display:flex;gap:10px;align-items:flex-end}
+  .row .grow{flex:1}
+  .langs{display:flex;gap:8px;flex-wrap:wrap}
+  .lang{padding:7px 14px;border:1px solid var(--line);border-radius:999px;cursor:pointer;
+        background:var(--card2);font-size:.9rem}
+  .lang.on{background:var(--sky);color:#04283a;border-color:var(--sky);font-weight:600}
+  .ap{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;
+      background:var(--card2)}
+  .aphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .btn{background:var(--sky);color:#04283a;border:none;border-radius:9px;padding:11px 18px;
+       font-size:.95rem;font-weight:600;cursor:pointer}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--sky);border:1px solid var(--sky)}
+  .btn.small{padding:6px 12px;font-size:.85rem}
+  .del{background:transparent;border:none;color:var(--bad);cursor:pointer;font-size:.85rem}
+  .status{font-size:.85rem;margin-top:6px;min-height:1.2em}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .pend{color:var(--mut)}
+  .keybox{background:var(--card2);border:1px solid var(--line);border-radius:9px;
+          padding:10px;font-family:ui-monospace,monospace;font-size:.75rem;
+          word-break:break-all;color:var(--mut)}
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+  .hint{font-size:.8rem;color:var(--mut);margin-top:6px}
+  details summary{cursor:pointer;color:var(--sky);font-size:.85rem;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="langs" id="langs" style="justify-content:flex-end;margin-bottom:12px"></div>
+  <h1 id="t_title">WifiHub</h1>
+  <p class="sub" id="t_sub"></p>
+
+  <div class="card">
+    <h2 id="t_general"></h2>
+    <label id="t_netname"></label>
+    <input id="netname" placeholder="Minha Rede">
+  </div>
+
+  <div class="card">
+    <h2 id="t_gateway"></h2>
+    <div class="row">
+      <div class="grow"><label id="t_gwname"></label>
+        <input id="gwname" placeholder="Gateway"></div>
+      <div class="grow"><label id="t_ip"></label>
+        <input id="gwhost" placeholder="192.168.0.1"></div>
+    </div>
+    <div class="status pend" id="gwstatus"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="t_aps"></h2>
+    <div id="aps"></div>
+    <button class="btn ghost small" id="addap"></button>
+  </div>
+
+  <div class="card">
+    <h2 id="t_access"></h2>
+    <p class="hint" id="t_accesshint"></p>
+    <label id="t_pwd"></label>
+    <input id="pwd" type="password" placeholder="••••••••">
+    <div class="actions">
+      <button class="btn ghost" id="testbtn"></button>
+    </div>
+    <details>
+      <summary id="t_showkey"></summary>
+      <p class="hint" id="t_keyhint"></p>
+      <div class="keybox" id="pubkey">…</div>
+    </details>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="savebtn" disabled></button>
+  </div>
+  <div class="status" id="savestatus"></div>
+</div>
+
+<script>
+const T = {
+  en: {
+    title:"WifiHub — Setup", sub:"Configure your OpenWrt gateway and access points.",
+    general:"General", netname:"Network name",
+    gateway:"Gateway", gwname:"Name", ip:"IP address",
+    aps:"Access points", addap:"+ Add access point", apname:"Name",
+    access:"Access", accesshint:"Enter the router's root password. It's used once to install the key and is never stored.",
+    pwd:"root password (same for all devices)", showkey:"Show public key",
+    keyhint:"If automatic install fails, add this key to /etc/dropbear/authorized_keys on each device.",
+    test:"Test & install key", testing:"testing…", save:"Save & start",
+    saving:"saving…", saved:"Saved! Starting…",
+    ok:"connected", pending:"not tested", needall:"All devices must connect before saving.",
+    del:"remove", needgw:"Enter the gateway IP.",
+  },
+  pt: {
+    title:"WifiHub — Configuração", sub:"Configure seu gateway e access points OpenWrt.",
+    general:"Geral", netname:"Nome da rede",
+    gateway:"Gateway", gwname:"Nome", ip:"Endereço IP",
+    aps:"Access points", addap:"+ Adicionar access point", apname:"Nome",
+    access:"Acesso", accesshint:"Informe a senha do root do roteador. Ela é usada só uma vez para instalar a chave e nunca é gravada.",
+    pwd:"senha do root (a mesma para todos os aparelhos)", showkey:"Mostrar chave pública",
+    keyhint:"Se a instalação automática falhar, adicione esta chave em /etc/dropbear/authorized_keys de cada aparelho.",
+    test:"Testar & instalar chave", testing:"testando…", save:"Salvar & iniciar",
+    saving:"salvando…", saved:"Salvo! Iniciando…",
+    ok:"conectado", pending:"não testado", needall:"Todos os aparelhos precisam conectar antes de salvar.",
+    del:"remover", needgw:"Informe o IP do gateway.",
+  },
+};
+// uk/fr/de: caem no inglês por enquanto (a completar)
+T.uk = T.en; T.fr = T.en; T.de = T.en;
+
+let lang = "pt";
+const LANGS = ["en","pt","uk","fr","de"];
+const $ = id => document.getElementById(id);
+const t = k => (T[lang] && T[lang][k]) || T.en[k] || k;
+
+let aps = [];          // [{name,host,ok}]
+let gwOk = false;
+
+function api(path, body){
+  return fetch(path, {method: body?"POST":"GET",
+    headers:{"Content-Type":"application/json"},
+    body: body?JSON.stringify(body):undefined}).then(r=>r.json());
+}
+
+function renderLangs(){
+  $("langs").innerHTML = LANGS.map(l=>
+    `<span class="lang ${l===lang?'on':''}" data-l="${l}">${l}</span>`).join("");
+  document.querySelectorAll(".lang").forEach(e=>e.onclick=()=>{lang=e.dataset.l;applyLang();});
+}
+function applyLang(){
+  renderLangs();
+  $("t_title").textContent=t("title"); document.title=t("title");
+  $("t_sub").textContent=t("sub");
+  $("t_general").textContent=t("general"); $("t_netname").textContent=t("netname");
+  $("t_gateway").textContent=t("gateway"); $("t_gwname").textContent=t("gwname");
+  $("t_ip").textContent=t("ip");
+  $("t_aps").textContent=t("aps"); $("addap").textContent=t("addap");
+  $("t_access").textContent=t("access"); $("t_accesshint").textContent=t("accesshint");
+  $("t_pwd").textContent=t("pwd"); $("t_showkey").textContent=t("showkey");
+  $("t_keyhint").textContent=t("keyhint");
+  $("testbtn").textContent=t("test"); $("savebtn").textContent=t("save");
+  renderAps();
+  refreshSave();
+}
+function renderAps(){
+  $("aps").innerHTML = aps.map((a,i)=>`
+    <div class="ap">
+      <div class="aphead">
+        <strong>AP ${i+1}</strong>
+        <button class="del" data-i="${i}">${t("del")}</button>
+      </div>
+      <div class="row">
+        <div class="grow"><label>${t("apname")}</label>
+          <input data-f="name" data-i="${i}" value="${a.name||''}" placeholder="AP ${i+1}"></div>
+        <div class="grow"><label>${t("ip")}</label>
+          <input data-f="host" data-i="${i}" value="${a.host||''}" placeholder="192.168.20.${i+2}"></div>
+      </div>
+      <div class="status ${a.ok?'ok':'pend'}">${a.ok?('✓ '+t("ok")):(a.tested?('✗ '+(a.detail||'')):t("pending"))}</div>
+    </div>`).join("");
+  $("aps").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{
+    aps[inp.dataset.i][inp.dataset.f]=inp.value; if(inp.dataset.f==='host'){aps[inp.dataset.i].ok=false;refreshSave();}
+  });
+  $("aps").querySelectorAll(".del").forEach(b=>b.onclick=()=>{aps.splice(+b.dataset.i,1);renderAps();refreshSave();});
+}
+function gwStatus(){
+  const el=$("gwstatus");
+  el.className="status "+(gwOk?"ok":"pend");
+  el.textContent=gwOk?("✓ "+t("ok")):"";
+}
+function refreshSave(){
+  const allok = gwOk && aps.length>=0 && aps.every(a=>a.ok || !a.host);
+  const hasGw = $("gwhost").value.trim();
+  $("savebtn").disabled = !(hasGw && gwOk && aps.filter(a=>a.host).every(a=>a.ok));
+  $("savestatus").textContent="";
+}
+async function testAll(){
+  const pwd=$("pwd").value;
+  $("testbtn").disabled=true; const orig=$("testbtn").textContent; $("testbtn").textContent=t("testing");
+  // gateway
+  const gwhost=$("gwhost").value.trim();
+  if(gwhost){
+    $("gwstatus").className="status pend"; $("gwstatus").textContent="…";
+    const r=await api("/api/setup/test-host",{host:gwhost,password:pwd});
+    gwOk=r.ok; $("gwstatus").className="status "+(r.ok?"ok":"bad");
+    $("gwstatus").textContent=(r.ok?"✓ "+t("ok"):"✗ "+(r.detail||""));
+  }
+  // aps
+  for(const a of aps){
+    if(!a.host){a.ok=false;a.tested=false;continue;}
+    a.tested=true; renderAps();
+    const r=await api("/api/setup/test-host",{host:a.host,password:pwd});
+    a.ok=r.ok; a.detail=r.detail; renderAps();
+  }
+  $("testbtn").disabled=false; $("testbtn").textContent=orig;
+  refreshSave();
+}
+async function save(){
+  $("savebtn").disabled=true; $("savestatus").className="status pend";
+  $("savestatus").textContent=t("saving");
+  const payload={
+    language:lang, network_name:$("netname").value.trim(),
+    gateway:{name:$("gwname").value.trim()||"Gateway",host:$("gwhost").value.trim()},
+    aps:aps.filter(a=>a.host).map(a=>({name:a.name,host:a.host})),
+  };
+  const r=await api("/api/setup/save",payload);
+  if(r.ok){$("savestatus").className="status ok";$("savestatus").textContent=t("saved");
+    setTimeout(()=>{location.href=(window.__INGRESS__||"")+"/";},900);}
+  else{$("savestatus").className="status bad";$("savestatus").textContent=(r.detail||"erro");$("savebtn").disabled=false;}
+}
+
+async function init(){
+  applyLang();
+  $("addap").onclick=()=>{aps.push({name:"",host:"",ok:false});renderAps();refreshSave();};
+  $("testbtn").onclick=testAll;
+  $("savebtn").onclick=save;
+  $("gwhost").oninput=()=>{gwOk=false;gwStatus();refreshSave();};
+  // pré-preenche se já configurado (aba Config)
+  try{
+    const cfg=await api("/api/setup/config");
+    if(cfg && cfg.gateway){
+      lang=cfg.language||lang; $("netname").value=cfg.network_name||"";
+      $("gwname").value=cfg.gateway.name||""; $("gwhost").value=cfg.gateway.host||"";
+      aps=(cfg.aps||[]).map(a=>({name:a.name,host:a.host,ok:false}));
+    }
+  }catch(e){}
+  // gera/obtém a chave pública
+  try{const k=await api("/api/setup/genkey",{}); $("pubkey").textContent=k.public_key||"—";}catch(e){}
+  applyLang();
+}
+init();
+</script>
+</body>
+</html>

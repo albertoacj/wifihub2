@@ -1,5 +1,5 @@
 name: WifiHub
-version: "0.1.1"
+version: "0.1.3"
 stage: experimental
 slug: wifihub
 description: Gerência e gráficos de uso para gateway + APs OpenWrt, dentro do Home Assistant

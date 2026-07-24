@@ -16,7 +16,7 @@ from .icons import IconStore
 from .auth import Auth, COOKIE
 from .influx import get_influx
 from .ssh import pool
-from . import wifi, firewall, push, provisioning
+from . import wifi, firewall, push, provisioning, wizard
 from .config import reload_settings
 from .models import (DeviceUpdate, SteerRequest, RedirectCreate, RadioUpdate,
                      IconRename, RuleCreate, RuleToggle)
@@ -109,13 +109,15 @@ async def guard(request: Request, call_next):
         if path.startswith("/api/"):
             return _harden(JSONResponse(
                 {"detail": "não configurado", "setup": True}, status_code=503))
-        return _harden(RedirectResponse("/setup", status_code=302))
+        return _harden(RedirectResponse(
+            _ingress_base(request) + "/setup", status_code=302))
 
     # Já provisionado: a página de setup vira a aba Config (exige sessão).
     if not open_path and auth.configured and not auth.valid(request.cookies.get(COOKIE)):
         if path.startswith("/api/"):
             return _harden(JSONResponse({"detail": "não autenticado"}, status_code=401))
-        return _harden(RedirectResponse("/login", status_code=302))
+        return _harden(RedirectResponse(
+            _ingress_base(request) + "/login", status_code=302))
 
     return _harden(await call_next(request))
 
@@ -603,11 +605,71 @@ async def api_setup_state():
     }
 
 
+@app.get("/api/setup/config")
+async def api_setup_config():
+    """Config atual (pré-preenche a aba Config); nunca devolve segredos."""
+    s = provisioning.load_setup() or {}
+    s.pop("panel_password_hash", None)
+    return s
+
+
+@app.post("/api/setup/genkey")
+async def api_setup_genkey():
+    """Gera (ou devolve) o par de chaves SSH e retorna a pública."""
+    pub = await asyncio.to_thread(wizard.gen_keypair)
+    return {"public_key": pub}
+
+
+@app.post("/api/setup/test-host")
+async def api_setup_test_host(payload: dict):
+    """Instala a chave num host via senha e verifica o acesso sem senha."""
+    host = str(payload.get("host", "")).strip()
+    if not host:
+        raise HTTPException(400, "informe o IP/host")
+    user = (str(payload.get("user", "root")).strip() or "root")
+    password = str(payload.get("password", ""))
+    port = int(payload.get("port", 22) or 22)
+    return await wizard.test_and_install(host, user, password, port)
+
+
+@app.post("/api/setup/save")
+async def api_setup_save(payload: dict):
+    """Grava o setup.json, recarrega a config e liga o coletor ao vivo."""
+    gw = payload.get("gateway") or {}
+    aps = payload.get("aps") or []
+    port = int(payload.get("port", 22) or 22)
+    setup = {
+        "language": str(payload.get("language", "en")),
+        "network_name": str(payload.get("network_name", "")),
+        "gateway": {
+            "id": gw.get("id") or "gateway",
+            "name": gw.get("name") or "Gateway",
+            "host": str(gw.get("host", "")).strip(),
+            "user": gw.get("user") or "root",
+        },
+        "aps": [
+            {"id": a.get("id") or f"ap{i+1}",
+             "name": a.get("name") or f"AP {i+1}",
+             "host": str(a.get("host", "")).strip(),
+             "user": a.get("user") or "root",
+             "radios": a.get("radios") or []}
+            for i, a in enumerate(aps)
+        ],
+        "ssh": {"key_path": provisioning.SSH_KEY_PATH, "port": port,
+                "public_key": provisioning.public_key()},
+    }
+    if not setup["gateway"]["host"]:
+        raise HTTPException(400, "informe o IP do gateway")
+    provisioning.save_setup(setup)
+    reload_settings()
+    await start_services()
+    return {"ok": True}
+
+
 @app.get("/setup")
-async def setup_page():
-    # Placeholder da Fase 1 — o assistente completo (multi-idioma) chega na Fase 3.
+async def setup_page(request: Request):
     if (STATIC_DIR / "setup.html").exists():
-        return FileResponse(STATIC_DIR / "setup.html")
+        return _serve_html("setup.html", request)
     return HTMLResponse(
         "<!doctype html><meta charset=utf-8>"
         "<title>WifiHub — Setup</title>"
