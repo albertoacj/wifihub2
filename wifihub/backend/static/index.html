@@ -1,0 +1,2150 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Rede Casa Cabral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#20242A">
+<link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa Cabral">
+<style>
+:root{
+  /* escuro mais leve: cinzas neutros em vez de quase-preto */
+  --bg:#20242A; --panel:#2A2F36; --panel2:#333941; --line:#414954;
+  --ink:#FFFFFF; --muted:#B4BDC8; --muted2:#8C97A4;
+  --signal:#3DDC77; --signal-dim:rgba(61,220,119,.16);
+  --down:#3DDC77; --up:#6EA8FE;
+  --transit:#FFB454; --alert:#FF6B6B; --blue:#6EA8FE;
+  --r:14px;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --sans:"Space Grotesk",-apple-system,system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  -webkit-font-smoothing:antialiased}
+body{padding-bottom:env(safe-area-inset-bottom)}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1180px;margin:0 auto;
+  /* viewport-fit=cover faz o conteudo passar por baixo da barra de status.
+     Sem estes recuos o topo fica embaixo do relogio e da Dynamic Island. */
+  padding:calc(18px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+          60px calc(16px + env(safe-area-inset-left))}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);font-weight:600}
+
+/* ---- top / hero ---- */
+.logout{margin-left:auto;background:transparent;border:1px solid var(--line);
+  color:var(--muted2);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:600}
+.logout:hover{border-color:var(--alert);color:var(--alert)}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:.02em;font-size:18px}
+.logo .dot{width:9px;height:9px;border-radius:50%;background:var(--signal);
+  box-shadow:0 0 12px var(--signal)}
+.stat-dot{width:7px;height:7px;border-radius:50%}
+.on{background:var(--signal);box-shadow:0 0 8px var(--signal)}
+.off{background:var(--alert);box-shadow:0 0 8px var(--alert)}
+
+.hero{background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.herohead{display:flex;align-items:center;margin-bottom:10px}
+.herocharts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hchart{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px 0}
+.hchart .hlbl{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.hchart .hval{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.05;margin-top:1px}
+.hchart .hval small{font-size:13px;color:var(--muted);font-weight:500;margin-left:3px}
+.hchart .htrace{height:38px;margin:6px -14px 0}
+.arrow{font-family:var(--mono);font-weight:700}
+.dl{color:var(--down)} .ul{color:var(--up)}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:6px;margin:18px 0 14px;overflow-x:auto;overflow-y:hidden;
+  flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);flex:none;
+  white-space:nowrap;scroll-snap-align:start;
+  padding:9px 16px;border-radius:999px;font-size:14.5px;font-weight:600;letter-spacing:.01em}
+.tab.active{background:var(--panel2);border-color:var(--line);color:var(--ink)}
+
+/* ---- ap grid ---- */
+.aps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 15px;cursor:pointer;transition:border-color .15s,transform .05s;position:relative}
+.ap:hover{border-color:#31415a}
+.ap:active{transform:translateY(1px)}
+.ap.sel{border-color:var(--signal);box-shadow:0 0 0 1px var(--signal-dim),0 8px 30px rgba(0,0,0,.35)}
+.ap .head{display:flex;align-items:center;gap:10px}
+.apic{width:26px;height:26px;flex:none}
+.ap .head svg{width:18px;height:18px;flex:none}
+.ap .nm{font-weight:700;font-size:16px;color:#FFF}
+.ap .cnt{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);padding:2px 8px;border-radius:999px}
+.ap .rates{display:flex;gap:16px;margin-top:12px;font-family:var(--mono);font-size:12.5px}
+.ap .spark{margin-top:10px;height:34px}
+.muted{color:var(--muted)}
+
+/* ---- client list ---- */
+.detail{grid-column:1/-1;background:var(--panel);border:1px solid var(--signal);
+  border-radius:var(--r);overflow-x:clip;overflow-y:visible;max-width:100%;min-width:0;
+  box-shadow:0 0 0 1px var(--signal-dim)}
+.detail .dhead{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.detail .dhead svg{width:22px;height:22px;flex:none}
+.detail .dhead .nm{font-weight:700;font-size:16px;color:#FFF}
+.detail .dhead .x{margin-left:auto;background:var(--panel2);border:1px solid var(--line);
+  color:var(--muted);width:30px;height:30px;border-radius:8px;font-size:16px}
+.cli{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(65,73,84,.55)}
+.cli:last-child{border-bottom:none}
+.cli.transit{background:rgba(255,180,84,.06)}
+.ic{width:58px;height:58px;flex:none;border-radius:50%;
+  background:var(--tint,rgba(124,141,160,.14));
+  display:grid;place-items:center;color:var(--tone,var(--ink));cursor:pointer;
+  transition:transform .12s,box-shadow .12s}
+.ic:hover{transform:scale(1.06);box-shadow:0 0 0 2px var(--tint,var(--signal-dim))}
+.ic svg,.ic img{width:30px;height:30px;object-fit:contain}
+.cinfo{min-width:0;flex:1}
+.cname{font-weight:700;font-size:17px;color:#FFF;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;cursor:text}
+.cname .band{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px solid var(--line);
+  border-radius:4px;padding:1px 5px;font-weight:500}
+.cmeta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cname input{background:var(--panel2);border:1px solid var(--signal);color:var(--ink);
+  font:inherit;font-weight:700;font-size:16px;border-radius:6px;padding:2px 6px;width:190px}
+.crates{font-family:var(--mono);font-size:12px;text-align:right;flex:none;min-width:96px}
+.csp{width:74px;height:26px;flex:none}
+.sig{flex:none;display:grid;place-items:center;width:26px;height:26px}
+.sig svg{width:22px;height:22px}
+.ethic{width:19px;height:19px;flex:none;opacity:.9}
+.move{flex:none;background:var(--panel2);border:1px solid var(--line);color:var(--muted);
+  padding:7px 10px;border-radius:9px;font-size:12px;font-weight:600;position:relative}
+.move:hover{border-color:var(--transit);color:var(--transit)}
+.wstate{flex:none;display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);
+  min-width:90px;justify-content:flex-end;font-family:var(--mono)}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:var(--panel2);
+  border:1px solid var(--line);border-radius:10px;padding:5px;z-index:30;min-width:150px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5)}
+.menu .mh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);
+  padding:5px 9px 3px}
+.menu button{display:block;width:100%;text-align:left;background:transparent;border:none;
+  color:var(--ink);padding:8px 9px;border-radius:7px;font-size:13px}
+.menu button:hover{background:var(--panel)}
+.menu button:disabled{color:var(--muted2);cursor:default}
+
+/* ---- icon picker ---- */
+.zbpane{background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:18px 20px;max-width:640px}
+.zbintro{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px}
+.zbintro b{color:var(--ink);font-weight:600}
+.zbrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.zblbl{font-size:13px;color:var(--muted2)}
+.zbrow .iotsel{width:210px}
+.zbinfo{background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:14px}
+.zbline{display:flex;gap:10px;font-size:13px;margin-bottom:5px;align-items:baseline}
+.zbk{color:var(--muted2);width:100px;flex:none;font-size:12px}
+.zbsafe{color:var(--signal);font-family:var(--mono);font-weight:600}
+.zbbad{color:var(--muted);font-family:var(--mono)}
+.zbhint{font-size:12px;color:var(--muted2);margin-top:7px}
+.zbaps{margin-bottom:16px}
+.zbaptitle{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted2);margin-bottom:8px}
+.zbap{display:flex;align-items:center;gap:12px;padding:7px 0;
+  border-top:1px solid var(--line);font-size:13px}
+.zbap:first-child{border-top:0}
+.zbapn{flex:1;font-weight:500}
+.zbch{font-family:var(--mono);font-size:12px;padding:2px 9px;border-radius:999px;
+  border:1px solid var(--line)}
+.zbch.ok{color:var(--signal);border-color:rgba(80,220,150,.3)}
+.zbch.bad{color:var(--transit);border-color:rgba(230,180,90,.35)}
+.zbarrow{font-family:var(--mono);font-size:12px;color:var(--signal)}
+.iotpane{background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px 18px}
+.iothead{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;
+  padding-bottom:12px;border-bottom:1px solid var(--line)}
+.iotcount{font-size:20px;font-weight:700}
+.iotcount span{font-size:12px;font-weight:400;color:var(--muted2)}
+.iotwarn{font-size:12px;color:var(--transit);margin-top:3px}
+.iotacts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.iotlist{margin:2px -4px 0;padding:0 4px}
+.iotrow{display:flex;align-items:center;gap:12px;padding:10px 2px;
+  border-top:1px solid var(--line);min-width:0;overflow:hidden}
+.iotrow:first-child{border-top:0}
+.iotrow.off{opacity:.55}
+.iotrow svg,.iotrow img{width:26px;height:26px;flex:none}
+.iotinfo{min-width:0;flex:1}
+.iotnm{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+.iotsub{font-family:var(--mono);font-size:11px;color:var(--muted2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iotsub b{color:var(--muted);font-weight:600}
+.iotsub .fora{color:var(--transit)}
+.iotsel{background-color:var(--panel);color:var(--ink);border:1px solid var(--line);
+  border-radius:9px;padding:6px 26px 6px 9px;font-size:12.5px;font-family:var(--sans);
+  width:150px;flex:0 0 auto;text-overflow:ellipsis}
+.iotsel:disabled{opacity:.5}
+@media (max-width:520px){
+  .iotrow{flex-wrap:wrap}
+  .iotsel{width:calc(100% - 38px);margin-left:38px;flex:1 1 auto}
+}
+.iotb{background:transparent;border:1px solid var(--line);color:var(--muted);
+  border-radius:999px;padding:5px 13px;font-size:12px;transition:.15s}
+.iotb:hover{border-color:var(--signal);color:var(--signal)}
+.iotb.sec{color:var(--muted2)}
+.iotb.sec:hover{border-color:var(--muted);color:var(--muted)}
+.iotb:disabled{opacity:.4}
+.pmenu button.prefon{color:var(--signal)}
+.pmenu button.prefoff{color:var(--muted2);border-top:1px solid var(--line);
+  border-radius:0;margin-top:4px}
+.pinned{font-size:10px;color:var(--muted2);margin-left:6px}
+.linkchip{font-family:var(--mono);font-size:10px;color:var(--muted2);
+  border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:8px}
+.pick{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;padding:2px}
+@media (max-width:420px){.pick{grid-template-columns:repeat(5,1fr)}}
+.pick button{background:transparent;border:1px solid transparent;border-radius:50%;
+  height:42px;display:grid;place-items:center;color:var(--tone,var(--muted))}
+.pick button:hover,.pick button.on{background:var(--tint);border-color:var(--tone)}
+.pick svg,.pick img{width:25px;height:25px;object-fit:contain}
+.pick .up{grid-column:1/-1;border:1px dashed var(--line);border-radius:9px;height:34px;
+  color:var(--muted);font-size:11.5px;display:grid;place-items:center;cursor:pointer;margin-top:2px}
+.pick .up:hover{border-color:var(--signal);color:var(--signal)}
+.pick button.cust{position:relative}
+.pick button.cust .rm{position:absolute;top:-4px;right:-4px;width:15px;height:15px;border-radius:50%;
+  background:var(--alert);color:#1a0000;font-size:11px;line-height:15px;display:none;border:none}
+.pick button.cust:hover .rm{display:block}
+
+/* ---- controles de rádio (canal / potência) ---- */
+.radios{padding:12px 16px;border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;max-width:100%;min-width:0}
+.rchip{display:flex;align-items:center;gap:9px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:12px;padding:8px 11px;
+  flex-wrap:wrap;min-width:0;max-width:100%}
+.rchip .rb{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;
+  padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--muted)}
+.rchip .rb.b5{color:var(--blue)} .rchip .rb.b24{color:var(--transit)}
+.rchip select{width:auto;min-width:0;flex:0 1 auto;font-size:12px;
+  padding:5px 22px 5px 7px;background-position:right 6px center}
+.rchip .rlbl{font-size:11px;color:var(--muted2)}
+.radios .rnote{font-size:11.5px;color:var(--muted2);flex:1;min-width:160px}
+
+/* ---- topo: tráfego + clientes online ---- */
+.toprow{display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:stretch}
+.toprow .hero{margin:0}
+.onlinebox{background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;
+  display:flex;flex-direction:column;justify-content:center}
+.onlinebox .obig{font-family:var(--mono);font-size:52px;font-weight:600;line-height:1;
+  color:#FFF;margin:6px 0 10px}
+.onlinebox .osub{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);
+  font-size:12px;color:var(--muted2)}
+.onlinebox .osub b{color:var(--ink);font-weight:600}
+
+/* ---- saúde do gateway ---- */
+.ghealth{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:12px}
+.gcell{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 12px}
+.gcell .gl{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted2)}
+.gcell .gv.ip{font-size:15px}
+.gcell .gv{font-family:var(--mono);font-size:19px;font-weight:600;color:#FFF;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcell .gs{font-family:var(--mono);font-size:10.5px;color:var(--muted2)}
+.gbar{height:3px;border-radius:2px;background:rgba(124,141,160,.22);margin-top:6px;overflow:hidden}
+.gbar i{display:block;height:100%;background:var(--down);border-radius:2px}
+.gbar i.warn{background:var(--transit)} .gbar i.hot{background:var(--alert)}
+
+/* ---- consumo ---- */
+.useg{display:flex;gap:6px;margin-bottom:14px}
+.useg button{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600}
+.useg button.on{background:var(--panel2);color:#FFF;border-color:var(--down)}
+.utot{display:flex;gap:26px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);margin-bottom:12px;flex-wrap:wrap}
+.utot .b .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+.utot .b .v{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:2px}
+.urow{display:flex;align-items:center;gap:13px;padding:12px 16px;cursor:pointer;
+  border-bottom:1px solid rgba(65,73,84,.55)}
+.urow:last-child{border-bottom:none}
+.urow:hover{background:rgba(255,255,255,.02)}
+.ubars{flex:1 1 90px;min-width:70px;height:34px;display:flex;align-items:flex-end;gap:2px}
+.ubars i{flex:1;border-radius:2px 2px 0 0;background:var(--down);min-height:2px;opacity:.85}
+.ubars i.u{background:var(--up)}
+.uinfo{flex:1 1 150px;min-width:0}
+.uinfo .n{font-weight:700;font-size:16px;color:#FFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uinfo .w{font-family:var(--mono);font-size:11.5px;color:var(--muted2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uvals{font-family:var(--mono);font-size:12.5px;text-align:right;flex:none;white-space:nowrap}
+.uvals .t{font-size:15px;font-weight:600;color:#FFF}
+
+/* detalhe ampliado */
+.uzoom{padding:14px 16px 18px;background:var(--panel2);border-bottom:1px solid rgba(65,73,84,.55)}
+.uzoom .zh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:12px}
+.uzoom .zt{font-weight:700;font-size:15px;color:#FFF}
+.uzoom .zl{font-family:var(--mono);font-size:11.5px;color:var(--muted2)}
+.zbars{height:120px;display:flex;align-items:flex-end;gap:3px}
+.zcol{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;min-width:0}
+.zcol i{display:block;border-radius:2px 2px 0 0;min-height:1px}
+.zcol i.d{background:var(--down)} .zcol i.u{background:var(--up);border-radius:0 0 2px 2px}
+.zleg{display:flex;gap:16px;margin-top:9px;font-size:11.5px;font-family:var(--mono)}
+.zleg b{font-weight:600}
+
+/* ---- regras de firewall ---- */
+.zones{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.zbox{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px}
+.zbox .zn{font-weight:700;font-size:13.5px;color:#FFF}
+.zbox .zd{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-top:2px}
+.fwdlist{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.fwdchip{font-family:var(--mono);font-size:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:9px;padding:7px 11px;color:var(--muted)}
+.fwdchip b{color:var(--down);font-weight:600}
+.rulegrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr .9fr auto;gap:8px;align-items:center;
+  padding:12px 14px;background:var(--panel2)}
+.rulegrid .rl{grid-column:1/-1;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted2);margin-bottom:2px}
+.rulegrid .btn{grid-column:auto}
+
+/* ---- regras de tráfego ---- */
+.sect{margin-top:18px}
+.secth{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+.secth h3{font-size:14px;font-weight:700;color:#FFF}
+.secth span{font-size:11.5px;color:var(--muted2)}
+.trow{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+  padding:11px 14px;border-bottom:1px solid rgba(65,73,84,.55)}
+.trow:last-child{border-bottom:none}
+.trow .tn{font-weight:600;font-size:13.5px;color:#FFF}
+.trow .tp{font-family:var(--mono);font-size:11.5px;color:var(--muted2);margin-top:2px}
+.zchip{font-family:var(--mono);font-size:10.5px;padding:2px 7px;border-radius:5px;
+  border:1px solid var(--line);color:var(--muted)}
+.tgt{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:5px}
+.tgt.ACCEPT{color:var(--down);border:1px solid rgba(61,220,119,.35)}
+.tgt.REJECT,.tgt.DROP{color:var(--alert);border:1px solid rgba(255,107,107,.35)}
+
+/* ---- redirects ---- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.fwhead{padding:10px 14px;display:grid;grid-template-columns:76px 84px 1fr 84px 76px;gap:10px;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2);
+  border-bottom:1px solid var(--line)}
+.fwrow{display:grid;grid-template-columns:76px 84px 1fr 84px 76px;gap:10px;align-items:center;
+  padding:11px 14px;border-bottom:1px solid rgba(65,73,84,.55)}
+.fwrow:last-child{border-bottom:none}
+.fwrow .proto{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;
+  text-align:center;border:1px solid var(--line);border-radius:6px;padding:4px 0;text-transform:uppercase}
+.proto.tcp{color:var(--signal)} .proto.udp{color:var(--blue)} .proto.tcpudp{color:var(--transit)}
+.fwrow .mono{font-size:13px}
+.dcell .dname{font-size:13.5px;font-weight:600}
+.dcell .dip{font-family:var(--mono);font-size:12px;color:var(--muted2)}
+.rowacts{display:flex;gap:6px;justify-content:flex-end}
+.iconbtn{background:transparent;border:1px solid var(--line);color:var(--muted2);border-radius:8px;
+  width:32px;height:32px;display:grid;place-items:center;font-size:14px}
+.iconbtn:hover{border-color:var(--signal);color:var(--signal)}
+.iconbtn.del:hover{border-color:var(--alert);color:var(--alert)}
+.fwedit{grid-column:1/-1;display:grid;grid-template-columns:78px 90px 1.2fr 90px 1fr auto auto;
+  gap:8px;align-items:center;padding:4px 0}
+.fwadd{display:grid;grid-template-columns:78px 90px 1.2fr 90px 1fr auto;gap:8px;padding:12px 14px;
+  background:var(--panel2);align-items:center}
+.fwadd .addlbl{grid-column:1/-1;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted2);margin-bottom:2px}
+select,input.f{background:var(--bg);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:13px;border-radius:8px;padding:8px 9px;width:100%;
+  /* Sem isto o Safari do iOS aplica o estilo nativo, com padding próprio e
+     largura mínima que ignora o container — a caixa vaza para fora do card.
+     Removendo a aparência nativa, some também a setinha: desenhada abaixo. */
+  -webkit-appearance:none;appearance:none;box-sizing:border-box;min-width:0;
+  max-width:100%;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%237C8D9F' stroke-width='1.6'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;
+  padding-right:26px}
+select::-ms-expand{display:none}
+input.f::placeholder{color:var(--muted2)}
+.btn{background:var(--signal);color:#04231d;border:none;font-weight:700;border-radius:9px;
+  padding:9px 15px;font-size:13px;white-space:nowrap}
+.btn.ghost{background:var(--panel);color:var(--muted);border:1px solid var(--line)}
+.btn:disabled{opacity:.5}
+
+/* ---- toast ---- */
+.toasts{position:fixed;left:0;right:0;bottom:16px;display:flex;flex-direction:column;
+  align-items:center;gap:8px;z-index:100;pointer-events:none}
+.toast{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  padding:10px 16px;border-radius:10px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.5);
+  display:flex;align-items:center;gap:9px}
+.toast .tb{width:7px;height:7px;border-radius:50%;background:var(--transit)}
+
+.empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px}
+
+@media (max-width:980px){
+  .toprow{grid-template-columns:1fr}
+  .ghealth{grid-template-columns:repeat(3,1fr)}
+  .onlinebox{flex-direction:row;align-items:center;gap:18px}
+  .onlinebox .obig{margin:0;font-size:40px}
+}
+@media (max-width:620px){
+  .herocharts{grid-template-columns:1fr}
+  .tabs{font-size:15px;margin:16px 0 12px;
+    padding-left:2px;padding-right:14px;scroll-padding-left:2px}
+  .tab{font-size:15px;padding:10px 17px}
+  .ghealth{grid-template-columns:repeat(2,1fr)}
+  .onlinebox{flex-wrap:wrap}
+  .radios{flex-direction:column;align-items:stretch;padding:12px}
+  .urow{flex-wrap:wrap;gap:10px}
+  .rulegrid{grid-template-columns:1fr 1fr}
+  .rulegrid .btn{grid-column:1/-1}
+  .trow{grid-template-columns:1fr;gap:6px}
+  .uinfo{flex:1 1 auto;order:1}
+  .uvals{order:2;text-align:right}
+  .ubars{order:3;flex:1 1 100%;height:30px}
+  .zbars{height:96px}
+  .rchip{width:100%;justify-content:flex-start}
+  .rchip select{flex:1 1 auto}
+  .radios .rnote{min-width:0}
+  .metric .val{font-size:24px}
+  .fwhead{display:none}
+  .fwrow{grid-template-columns:58px 1fr auto}
+  .fwrow .extcol,.fwrow .intcol{display:none}
+  .fwadd,.fwedit{grid-template-columns:1fr 1fr;grid-auto-flow:row}
+  .fwadd .btn,.fwedit .btn{grid-column:1/-1}
+  .crates,.csp{display:none}
+  .cli{gap:9px;padding:10px 12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* --- botao de reiniciar + modais + graficos de saude --- */
+.pwr{background:transparent;border:1px solid var(--line);color:var(--muted2);
+  border-radius:8px;width:26px;height:26px;display:inline-flex;align-items:center;
+  justify-content:center;padding:0;flex:none;transition:.15s}
+.pwr:hover{border-color:var(--alert);color:var(--alert)}
+.pwr:disabled{opacity:.35;cursor:default}
+.ap .head .pwr{margin-left:8px}
+.top .pwr:first-of-type{margin-left:auto}
+.top .pwr ~ .pwr{margin-left:8px}
+.top .pwr ~ .logout{margin-left:8px}
+/* nao usar .on/.off aqui: sao as classes globais do pontinho de status,
+   que pintam fundo verde/vermelho com glow */
+.pwr.globe:hover{border-color:var(--signal);color:var(--signal)}
+.pwr.globe.blk{border-color:var(--transit);color:var(--transit)}
+.pwr.globe.blk:hover{border-color:var(--signal);color:var(--signal)}
+.pwr.bell{font-size:14px;line-height:1;background:transparent;box-shadow:none}
+.pwr.bell:hover{border-color:var(--muted)}
+.pwr.bell.bon{border-color:var(--signal)}
+.pwr.bell.boff{opacity:.55}
+.mback{position:fixed;inset:0;background:rgba(10,12,15,.66);display:flex;
+  align-items:center;justify-content:center;z-index:60;padding:16px}
+.mcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:18px 20px;max-width:620px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.55)}
+.mtitle{font-size:17px;font-weight:600;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.mtitle .x{margin-left:auto;background:transparent;border:0;color:var(--muted2);
+  font-size:20px;line-height:1;padding:0 2px}
+.mtext{font-size:13px;color:var(--muted);line-height:1.55}
+.mrow{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.mbtn{background:transparent;border:1px solid var(--line);color:var(--ink);
+  border-radius:10px;padding:8px 16px;font-size:13px;transition:.15s}
+.mbtn:hover{border-color:var(--muted)}
+.mbtn.danger{border-color:var(--alert);color:var(--alert)}
+.mbtn.danger:hover{background:var(--alert);color:#20242A}
+.rblist{display:flex;flex-direction:column;gap:5px;margin:14px 0 12px;
+  max-height:44vh;overflow-y:auto}
+.rbitem{display:flex;align-items:center;gap:11px;padding:9px 12px;
+  border:1px solid var(--line);border-radius:10px;cursor:pointer;transition:.15s}
+.rbitem:hover{border-color:var(--muted)}
+.rbitem.on{border-color:var(--alert);background:rgba(255,107,107,.06)}
+.rbitem input{width:16px;height:16px;flex:none;accent-color:var(--alert);margin:0}
+.rbnm{font-size:14px;font-weight:600}
+.rbtag{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted2);
+  border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.rbquick{display:flex;gap:7px;flex-wrap:wrap}
+.rbwarn{margin-top:12px;font-size:12.5px;color:var(--transit);line-height:1.45}
+.mwins{display:flex;gap:6px;margin:14px 0 10px;flex-wrap:wrap}
+.mwin{background:transparent;border:1px solid var(--line);color:var(--muted2);
+  border-radius:8px;padding:4px 11px;font-size:12px;font-family:var(--mono)}
+.mwin.on{border-color:var(--signal);color:var(--signal)}
+.mstats{display:flex;gap:20px;font-size:11.5px;color:var(--muted2);
+  margin-top:11px;font-family:var(--mono);flex-wrap:wrap}
+.mstats b{color:var(--ink);font-weight:600}
+.mempty{color:var(--muted2);font-size:13px;padding:44px 0;text-align:center}
+.sparkwrap{position:relative}
+.sparkscale{position:absolute;top:0;right:2px;font-family:var(--mono);
+  font-size:9.5px;color:var(--muted2);opacity:.7;pointer-events:none}
+::selection{background:var(--signal);color:#0d1117}
+::-moz-selection{background:var(--signal);color:#0d1117}
+/* a interface em si nao deve ser selecionavel: tocar e arrastar num card
+   pintava o texto de verde e ele sumia. IP e MAC continuam selecionaveis. */
+.ap,.detail .dhead,.offrow .offnm,.gcell,.tab,.mbtn,.pmenu,.mtitle{
+  -webkit-user-select:none;user-select:none}
+.offrow .oi,.cip,.cmac{-webkit-user-select:text;user-select:text}
+.pmback{position:fixed;inset:0;z-index:70}
+.pmenu{position:fixed;z-index:71;background:var(--panel2);
+  border:1px solid var(--line);border-radius:12px;padding:6px;
+  box-shadow:0 14px 40px rgba(0,0,0,.5);overflow-y:auto;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.pmenu .mh{position:sticky;top:-6px;background:var(--panel2);z-index:1}
+.pmenu .mh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted2);padding:6px 10px 4px}
+.pmenu button{display:block;width:100%;text-align:left;background:transparent;
+  border:none;color:var(--ink);font-size:14px;padding:10px 12px;border-radius:8px}
+.pmenu button:hover{background:var(--panel)}
+.pmenu button:disabled{color:var(--muted2);cursor:default}
+.ap.off{border-style:dashed}
+.ap.off .apic{opacity:.45}
+.ap.off .nm{color:var(--muted)}
+.offpv{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.offchip{font-family:var(--mono);font-size:11px;color:var(--muted2);
+  border:1px solid var(--line);border-radius:999px;padding:2px 9px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.offchip.more{color:var(--muted)}
+.offrow{display:flex;align-items:center;gap:11px;padding:9px 2px;
+  border-top:1px solid var(--line)}
+.offrow:first-child{border-top:0}
+.offrow svg,.offrow img{width:22px;height:22px;flex:none;opacity:.5}
+.offic{position:relative;flex:none;width:22px;height:22px}
+.offbadge{position:absolute;right:-7px;bottom:-6px;font-size:9px;line-height:1;
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  padding:1px 2px}
+.offrow .offnm{font-weight:600;font-size:14px;color:var(--muted)}
+.offrow .oi{font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.offrow .ow{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted2)}
+.gcell.click{cursor:pointer}
+.gcell.click:hover{border-color:var(--muted2)}
+.aphealth .ghealth{grid-template-columns:repeat(4,1fr);margin:10px 0 2px}
+@media (max-width:820px){.aphealth .ghealth{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () =>
+    navigator.serviceWorker.register("/sw.js").catch(() => {}));
+}
+</script>
+<script src="/static/push.js"></script>
+
+<script type="module">
+import { render } from "https://esm.sh/preact@10.24.3";
+import { useState, useEffect, useRef, useMemo, useLayoutEffect } from "https://esm.sh/preact@10.24.3/hooks";
+import { html } from "https://esm.sh/htm@3.1.1/preact?deps=preact@10.24.3";
+import { createPortal } from "https://esm.sh/preact@10.24.3/compat";
+
+/* ---------- ícones ---------- */
+const P = (d) => html`<path d=${d}/>`;
+const ICON = {
+  /* ---- medidores / energia ---- */
+  energy_meter:`<circle cx="12" cy="13" r="8.4" fill="#2B6CB0"/><circle cx="12" cy="13" r="6.2" fill="#F7FAFC"/>
+    <path d="M6.6 8.2l1.1 1.1M17.4 8.2l-1.1 1.1M4.9 13.4h1.6M17.5 13.4h1.6M12 6.6V8.2" stroke="#E53E3E" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M12.6 9.2l-2.7 4.1h2.1l-.7 3.4 2.8-4.2h-2.1z" fill="#E53E3E"/>`,
+  solar:`<circle cx="12" cy="4.9" r="2.1" fill="#F6C445"/>
+    <path d="M12 1.4v1.1M12 7.3v1.1M8.5 4.9H9.6M14.4 4.9h1.1M9.6 2.5l.8.8M14.4 2.5l-.8.8M9.6 7.3l.8-.8M14.4 7.3l-.8-.8" stroke="#F6C445" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M4.6 11.4h14.8l1.5 7.2H3.1z" fill="#38A169" stroke="#22543D" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M9.3 11.4l-.9 7.2M14.7 11.4l.9 7.2M3.9 15h16.2" stroke="#22543D" stroke-width="1.1"/>
+    <path d="M12 18.6v3M9 21.6h6" stroke="#22543D" stroke-width="1.4" stroke-linecap="round"/>`,
+  ev_charger:`<rect x="4" y="3.6" width="9.4" height="16" rx="1.6" fill="#48BB78"/>
+    <rect x="5.7" y="5.4" width="6" height="4.3" rx="1" fill="#F0FFF4"/>
+    <path d="M9.6 11.4l-2.4 4.2h1.9l-.6 3.1 2.5-4.3H9.1z" fill="#F0FFF4"/>
+    <path d="M13.4 9.6h2.2a1.6 1.6 0 0 1 1.6 1.6v4.6" stroke="#48BB78" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M17.2 6.1v2.2M19.6 6.1v2.2" stroke="#48BB78" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="16" y="8.3" width="4.8" height="2.4" rx="1.2" fill="#48BB78"/>
+    <rect x="2.8" y="19.6" width="11.8" height="1.8" rx=".9" fill="#48BB78"/>`,
+  car:`<path d="M3.4 15.4c0-1.5 1.1-2 2.4-2.3l2-.3 1.9-2.4c.4-.5 1-.8 1.7-.8h4.3c.7 0 1.3.3 1.7.9l1.3 2 1.6.5c.7.2 1 .5 1 1.2v1.5c0 .7-.5 1.1-1.2 1.1H4.6c-.7 0-1.2-.4-1.2-1.1z" fill="none" stroke="#68C221" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="7.4" cy="17.6" r="1.9" fill="none" stroke="#68C221" stroke-width="1.5"/>
+    <circle cx="16.6" cy="17.6" r="1.9" fill="none" stroke="#68C221" stroke-width="1.5"/>
+    <path d="M12.3 10.4l-2 3.3h1.6l-.5 2.6 2.1-3.4h-1.6z" fill="#68C221"/>
+    <path d="M18.8 13.6h1.7a1.2 1.2 0 0 0 1.2-1.2V8.6a1.2 1.2 0 0 0-1.2-1.2h-4.1" stroke="#68C221" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <path d="M14.6 6.4h1.9M14.6 8.4h1.9" stroke="#68C221" stroke-width="1.3" stroke-linecap="round"/>
+    <rect x="15.9" y="5.9" width="2.6" height="3" rx=".9" fill="none" stroke="#68C221" stroke-width="1.4"/>`,
+  thermo:`<path d="M9.9 13.6V5.1a2.1 2.1 0 0 1 4.2 0v8.5a4.3 4.3 0 1 1-4.2 0z" fill="#E2E8F0" stroke="#1A202C" stroke-width="1.3"/>
+    <circle cx="12" cy="17.4" r="2.7" fill="#FC6D8E"/>
+    <rect x="11" y="8.4" width="2" height="9" rx="1" fill="#FC6D8E"/>
+    <path d="M14.1 7.4h1.7M14.1 10.2h1.7" stroke="#1A202C" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M21.4 5.6a2.1 2.1 0 1 0-2.1 2.1" stroke="#1A202C" stroke-width="1.3" fill="none" stroke-linecap="round"/>`,
+  tv:`<rect x="3.1" y="8.4" width="17.8" height="11.4" rx="2.1" fill="#2D3748"/>
+    <rect x="5.2" y="10.3" width="10.6" height="7.6" rx="1.7" fill="#A3C853"/>
+    <circle cx="18.4" cy="12" r="1" fill="#F7FAFC"/><circle cx="18.4" cy="14.6" r="1" fill="#F7FAFC"/>
+    <circle cx="18.4" cy="17.2" r="1" fill="#F7FAFC"/>
+    <path d="M8.6 8.2L5.4 3.4M15.4 8.2l3.2-4.8" stroke="#2D3748" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="5" cy="3" r="1.3" fill="#2D3748"/><circle cx="19" cy="3" r="1.3" fill="#2D3748"/>
+    <rect x="7.2" y="19.8" width="9.6" height="1.6" rx=".8" fill="#2D3748"/>`,
+  settop:`<rect x="2.4" y="11.4" width="14.2" height="5.4" rx="1.9" fill="none" stroke="#2B3467" stroke-width="1.6"/>
+    <rect x="11.4" y="13" width="3.4" height="2.2" rx=".5" fill="none" stroke="#2B3467" stroke-width="1.3"/>
+    <path d="M4.6 14.1h2.1" stroke="#2B3467" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M3.6 11.2V3.8" stroke="#2B3467" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="4.9" cy="17.6" r="1.1" fill="#2B3467"/><circle cx="13.6" cy="17.6" r="1.1" fill="#2B3467"/>
+    <rect x="18.5" y="6.4" width="4.2" height="12" rx="1.3" fill="none" stroke="#2B3467" stroke-width="1.5"/>
+    <circle cx="19.9" cy="8.6" r=".85" fill="#2B3467"/><circle cx="19.9" cy="11.1" r=".85" fill="#2B3467"/>
+    <circle cx="21.5" cy="11.1" r=".85" fill="#2B3467"/><circle cx="19.9" cy="13.4" r=".85" fill="#2B3467"/>
+    <circle cx="21.5" cy="13.4" r=".85" fill="#2B3467"/>
+    <rect x="19.3" y="15.4" width="1.1" height="2.3" rx=".55" fill="#2B3467"/>
+    <rect x="21" y="15.4" width="1.1" height="2.3" rx=".55" fill="#2B3467"/>`,
+  computer:`<rect x="9.7" y="4.3" width="11.6" height="7.9" rx="1.2" fill="#63B3ED" stroke="#2A3A5C" stroke-width="1.3"/>
+    <path d="M12.2 11.6l4.6-6.2M15.6 11.6l3.4-4.6" stroke="#BEE3F8" stroke-width="1.1"/>
+    <path d="M14.4 12.2h2.2v2.1h-2.2z" fill="#2A3A5C"/>
+    <rect x="12.6" y="14.2" width="5.8" height="1.2" rx=".6" fill="#2A3A5C"/>
+    <rect x="2.6" y="4.3" width="5.4" height="10.9" rx="1.2" fill="#2A3A5C"/>
+    <circle cx="5.3" cy="8.4" r=".9" fill="#63B3ED"/>
+    <rect x="3.6" y="10.6" width="3.4" height="2.6" rx=".5" fill="#4A5A80"/>
+    <rect x="2.2" y="16.6" width="13.4" height="4.4" rx=".9" fill="#2A3A5C"/>
+    <path d="M4 18h9.8M4 19.6h9.8" stroke="#4A5A80" stroke-width="1"/>
+    <path d="M18.6 16.6c-1.1 0-2 .9-2 2v1.1c0 .7.6 1.3 1.3 1.3h1.4c.7 0 1.3-.6 1.3-1.3v-1.1c0-1.1-.9-2-2-2z" fill="#2A3A5C"/>
+    <path d="M18.6 16.6v2.1" stroke="#4A5A80" stroke-width="1"/>`,
+  ac:`<rect x="1.9" y="9.9" width="20.2" height="8.4" rx="2.4" fill="#DCF3FD" stroke="#0F1720" stroke-width="1.4"/>
+    <path d="M4.1 14.4h15.8v1.5c0 1.2-1 2.2-2.2 2.2H6.3c-1.2 0-2.2-1-2.2-2.2z" fill="#12B3F3" stroke="#0F1720" stroke-width="1.3"/>
+    <path d="M4.1 16.4h15.8" stroke="#0F1720" stroke-width="1.1"/>
+    <path d="M17.4 12.4h1.1M19.9 12.4h.6" stroke="#0F1720" stroke-width="1.2" stroke-linecap="round"/>
+    <circle cx="12" cy="5.4" r="4.1" fill="#7FD858" stroke="#0F1720" stroke-width="1.3"/>
+    <path d="M12 2.2v6.4M9.2 3.8l5.6 3.2M9.2 7l5.6-3.2" stroke="#0F1720" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M12 3.6l-.9-.9M12 3.6l.9-.9M12 7.2l-.9.9M12 7.2l.9.9M10.4 4.6l-1.2-.2M10.4 6.2l-1.2.2M13.6 4.6l1.2-.2M13.6 6.2l1.2.2" stroke="#0F1720" stroke-width="1.2" stroke-linecap="round"/>`,
+  phone_iphone:`<rect x="6.6" y="1.9" width="10.8" height="20.2" rx="2.4" fill="#232323"/>
+    <rect x="8" y="4.9" width="8" height="13.4" rx=".7" fill="#F7F7F7"/>
+    <rect x="10.4" y="3.1" width="3.2" height=".9" rx=".45" fill="#F7F7F7"/>
+    <circle cx="12" cy="20.1" r="1.35" fill="#F7F7F7"/>
+    <path d="M5.9 6.6v1.7M5.9 9.4v2.4M18.1 8.4v3.1" stroke="#232323" stroke-width="1.6" stroke-linecap="round"/>`,
+  ipad:`<rect x="4.4" y="1.9" width="15.2" height="20.2" rx="1.9" fill="#E3E8EA"/>
+    <rect x="6.1" y="4.7" width="11.8" height="13.6" rx=".5" fill="#39536B"/>
+    <circle cx="12" cy="3.3" r=".7" fill="#2A6E9E"/>
+    <circle cx="12" cy="20.1" r="1.5" fill="#D3DADD" stroke="#2A6E9E" stroke-width=".9"/>
+    <rect x="9.2" y="9.4" width="5.6" height="4.2" rx=".9" fill="#43C6A5"/>
+    <path d="M11 11.5h2M12 10.5v2" stroke="#39536B" stroke-width="1.1" stroke-linecap="round"/>`,
+  macbook:`<rect x="4.2" y="4.6" width="15.6" height="10.4" rx="1.4" fill="#2D3748" stroke="#4A5568" stroke-width="1.1"/>
+    <rect x="5.8" y="6.1" width="12.4" height="7.4" rx=".6" fill="#63B3ED"/>
+    <path d="M2.2 16.4h19.6l-1 2.2c-.2.5-.7.8-1.2.8H4.4c-.5 0-1-.3-1.2-.8z" fill="#A0AEC0"/>
+    <path d="M10.4 16.4h3.2" stroke="#718096" stroke-width="1.1" stroke-linecap="round"/>`,
+  laptop:`<rect x="4.2" y="4.6" width="15.6" height="10.4" rx="1.4" fill="#2D3748" stroke="#4A5568" stroke-width="1.1"/>
+    <rect x="5.8" y="6.1" width="12.4" height="7.4" rx=".6" fill="#9F7AEA"/>
+    <path d="M2.2 16.4h19.6l-1 2.2c-.2.5-.7.8-1.2.8H4.4c-.5 0-1-.3-1.2-.8z" fill="#A0AEC0"/>`,
+  speaker:`<path d="M4.9 14.6c0-3.4 3.2-6 7.1-6s7.1 2.6 7.1 6c0 3.6-3.2 6.3-7.1 6.3s-7.1-2.7-7.1-6.3z" fill="#26323F"/>
+    <ellipse cx="12" cy="9.2" rx="4.4" ry="1.2" fill="#F7FAFC"/>
+    <path d="M7.4 7.4a5.4 5.4 0 0 0-2.2-2.9M6 9.1a3.4 3.4 0 0 0-1.4-1.8" stroke="#26323F" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <path d="M16.6 7.4a5.4 5.4 0 0 1 2.2-2.9M18 9.1a3.4 3.4 0 0 1 1.4-1.8" stroke="#26323F" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+  smart_home:`<rect x="1.6" y="1.6" width="20.8" height="20.8" rx="2.6" fill="#41BDF5"/>
+    <path d="M12 4.4l7.2 6.1v8.1c0 .5-.4.9-.9.9H5.7c-.5 0-.9-.4-.9-.9v-8.1z" fill="#FFF"/>
+    <path d="M12 18.2v-7.4M12 13.4l2.4-2.4M12 15.6l-2.6-2.6M12 12l-2.2-2.2M12 12l2-2" stroke="#41BDF5" stroke-width="1.15" stroke-linecap="round"/>
+    <circle cx="12" cy="10.2" r=".95" fill="#41BDF5"/><circle cx="14.6" cy="10.6" r=".95" fill="#41BDF5"/>
+    <circle cx="9.4" cy="9.6" r=".95" fill="#41BDF5"/><circle cx="14.9" cy="12.9" r=".95" fill="#41BDF5"/>
+    <circle cx="9.1" cy="12.8" r=".95" fill="#41BDF5"/><circle cx="15.4" cy="15.5" r=".95" fill="#41BDF5"/>
+    <circle cx="8.8" cy="15.6" r=".95" fill="#41BDF5"/>`,
+  boiler:`<rect x="6.4" y="2.9" width="11.2" height="16.4" rx="2.4" fill="none" stroke="#2D3748" stroke-width="1.4"/>
+    <path d="M6.6 5.4h10.8M6.6 6.9h10.8" stroke="#2D3748" stroke-width="1.1"/>
+    <path d="M10.9 8.6c0 .6-.5 1.1-1.1 1.1S8.7 9.2 8.7 8.6C8.7 8 9.8 6.7 9.8 6.7s1.1 1.3 1.1 1.9z" fill="#4299E1"/>
+    <path d="M13.6 9.9c0 .7-.6 1.3-1.3 1.3s-1.3-.6-1.3-1.3c0-.7 1.3-2.2 1.3-2.2s1.3 1.5 1.3 2.2z" fill="#4299E1"/>
+    <circle cx="12" cy="15" r="2.7" fill="none" stroke="#2D3748" stroke-width="1.3"/>
+    <path d="M12 15l1.7-1.4" stroke="#E53E3E" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M9.4 19.4v1.8M14.6 19.4v1.8" stroke="#2D3748" stroke-width="1.5" stroke-linecap="round"/>`,
+  zigbee:`<rect x="2.4" y="12.9" width="14.4" height="4.9" rx="1.5" fill="#1A1A1A"/>
+    <rect x="2.9" y="14.1" width="2.7" height="2.5" rx=".5" fill="#E2E8F0"/>
+    <path d="M8.4 14.2h.7M9.9 14.2h.7M11.4 14.2h.7M12.9 14.2h.7M14.4 14.2h.7" stroke="#4A5568" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M16.6 13.4l3.1-3.9c.5-.6 1.4-.7 2-.2.6.5.7 1.4.2 2l-3.4 4.2z" fill="#1A1A1A"/>
+    <circle cx="12.4" cy="6.4" r="3.9" fill="#E8262B"/>
+    <path d="M10.6 4.9h3.6l-3.6 3h3.6" stroke="#FFF" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6.9 3.2a7.4 7.4 0 0 0 0 6.4M17.9 3.2a7.4 7.4 0 0 1 0 6.4" stroke="#E8262B" stroke-width="1.3" fill="none" stroke-linecap="round"/>`,
+  water_meter:`<circle cx="12" cy="12" r="8.4" fill="#2C5282"/><circle cx="12" cy="12" r="6.4" fill="#EBF8FF"/>
+    <path d="M12 8.2s2.8 3 2.8 4.6a2.8 2.8 0 1 1-5.6 0c0-1.6 2.8-4.6 2.8-4.6z" fill="#3182CE"/>
+    <path d="M12 3.6v1.4M12 19v1.4M3.6 12H5M19 12h1.4" stroke="#2C5282" stroke-width="1.4" stroke-linecap="round"/>`,
+  rainbird:`<path d="M12 3.4s4.6 5 4.6 8a4.6 4.6 0 1 1-9.2 0c0-3 4.6-8 4.6-8z" fill="#38A169"/>
+    <path d="M10.2 11.6a1.9 1.9 0 0 1 1.4-1.8" stroke="#C6F6D5" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <path d="M6.4 19.4h11.2M8.6 21.4h6.8" stroke="#38A169" stroke-width="1.5" stroke-linecap="round"/>`,
+  router:`<rect x="2.6" y="13.4" width="18.8" height="6.4" rx="1.9" fill="#4A5568"/>
+    <circle cx="6.4" cy="16.6" r="1.1" fill="#48BB78"/><circle cx="9.9" cy="16.6" r="1.1" fill="#48BB78"/>
+    <rect x="13.4" y="15.6" width="5.4" height="2" rx=".6" fill="#2D3748"/>
+    <path d="M7.4 11.4V6.4M16.6 11.4V6.4" stroke="#4A5568" stroke-width="1.6" stroke-linecap="round"/>`,
+  ap:`<path d="M3.4 8.4a12 12 0 0 1 17.2 0" stroke="#805AD5" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    <path d="M6.6 11.9a7.6 7.6 0 0 1 10.8 0" stroke="#805AD5" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    <path d="M9.6 15.4a3.4 3.4 0 0 1 4.8 0" stroke="#805AD5" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    <circle cx="12" cy="19" r="1.7" fill="#805AD5"/>`,
+  server:`<rect x="3.9" y="2.9" width="16.2" height="8" rx="1.6" fill="#4A5568"/>
+    <rect x="3.9" y="13.1" width="16.2" height="8" rx="1.6" fill="#4A5568"/>
+    <circle cx="7.4" cy="6.9" r="1.1" fill="#48BB78"/><circle cx="7.4" cy="17.1" r="1.1" fill="#48BB78"/>
+    <path d="M10.9 6.9h6.2M10.9 17.1h6.2" stroke="#2D3748" stroke-width="1.5" stroke-linecap="round"/>`,
+  console:`<path d="M7.4 7.6h9.2a5.4 5.4 0 0 1 5.4 5.4c0 2-1.4 3.6-3.4 3.6-1.4 0-2.2-.8-3.1-1.6H8.5c-.9.8-1.7 1.6-3.1 1.6-2 0-3.4-1.6-3.4-3.6a5.4 5.4 0 0 1 5.4-5.4z" fill="#4C51BF"/>
+    <path d="M6.4 11.4v2.6M5.1 12.7h2.6" stroke="#EBF4FF" stroke-width="1.4" stroke-linecap="round"/>
+    <circle cx="16.4" cy="11.9" r="1" fill="#EBF4FF"/><circle cx="18.4" cy="13.6" r="1" fill="#EBF4FF"/>`,
+  camera:`<path d="M4.4 8.9h9.4a2 2 0 0 1 2 2v5.4a2 2 0 0 1-2 2H4.4a2 2 0 0 1-2-2v-5.4a2 2 0 0 1 2-2z" fill="#4A5568"/>
+    <path d="M15.8 12.9l4.4-2.6v7.2l-4.4-2.6z" fill="#4A5568"/>
+    <circle cx="8.4" cy="13.6" r="2.4" fill="#63B3ED"/>`,
+  printer:`<rect x="6.4" y="2.9" width="11.2" height="5.4" rx="1" fill="#A0AEC0"/>
+    <rect x="3.4" y="8.4" width="17.2" height="8" rx="1.9" fill="#4A5568"/>
+    <circle cx="17.4" cy="11.4" r="1" fill="#48BB78"/>
+    <rect x="6.4" y="15.4" width="11.2" height="5.6" rx="1" fill="#E2E8F0"/>
+    <path d="M8.6 17.6h6.8M8.6 19.4h4.8" stroke="#A0AEC0" stroke-width="1.2" stroke-linecap="round"/>`,
+  ap_device:`<circle cx="12" cy="12" r="9.6" fill="#F2F5F7"/>
+    <circle cx="12" cy="12" r="9.6" fill="none" stroke="#C9D3DA" stroke-width=".8"/>
+    <circle cx="12" cy="12" r="5.1" fill="none" stroke="#1FA2FF" stroke-width="1.9"/>
+    <circle cx="12" cy="12" r="5.1" fill="none" stroke="#7FD0FF" stroke-width="3.4" opacity=".45"/>
+    <circle cx="12" cy="12" r="4.1" fill="#F8FAFB"/>
+    <path d="M10.4 9.9v3.4a1.7 1.7 0 0 0 3.4 0V9.9" stroke="#5B6B78" stroke-width="1.25" fill="none" stroke-linecap="round"/>`,
+  switch:`<rect x="1.4" y="7.9" width="21.2" height="8.6" rx="1.5" fill="#3A424C" stroke="#5A6470" stroke-width="1"/>
+    <rect x="2.9" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="4.8" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="6.7" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="8.6" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="10.5" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="12.4" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="14.3" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="16.2" y="9.4" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="2.9" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="4.8" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="6.7" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="8.6" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="10.5" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="12.4" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="14.3" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <rect x="16.2" y="12.9" width="1.5" height="2.1" rx=".3" fill="#B8C2CC"/>
+    <circle cx="19.2" cy="10.4" r=".7" fill="#3DDC77"/><circle cx="21" cy="10.4" r=".7" fill="#3DDC77"/>
+    <circle cx="19.2" cy="13.9" r=".7" fill="#FFB454"/><circle cx="21" cy="13.9" r=".7" fill="#3DDC77"/>`,
+  ethernet:`<rect x="5.6" y="9.4" width="12.8" height="9.4" rx="1.5" fill="#8FA3B8"/>
+    <rect x="7.4" y="6.4" width="9.2" height="3.4" rx="1" fill="#8FA3B8"/>
+    <rect x="7.9" y="11.1" width="1.5" height="2.6" rx=".3" fill="#2A2F36"/>
+    <rect x="10.1" y="11.1" width="1.5" height="2.6" rx=".3" fill="#2A2F36"/>
+    <rect x="12.3" y="11.1" width="1.5" height="2.6" rx=".3" fill="#2A2F36"/>
+    <rect x="14.5" y="11.1" width="1.5" height="2.6" rx=".3" fill="#2A2F36"/>
+    <path d="M12 6.4V2.9" stroke="#8FA3B8" stroke-width="1.7" stroke-linecap="round"/>`,
+  generic:`<rect x="3.4" y="5.4" width="17.2" height="13.2" rx="2.4" fill="#4A5568"/>
+    <circle cx="12" cy="12" r="3.1" fill="#A0AEC0"/>`,
+};
+
+/* cor dominante de cada ícone (fundo do badge) */
+const TONE = {
+  energy_meter:"#2B6CB0", solar:"#38A169", ev_charger:"#48BB78", car:"#68C221",
+  thermo:"#FC6D8E", tv:"#A3C853", settop:"#4C6EF5", computer:"#63B3ED", ac:"#12B3F3",
+  phone_iphone:"#8B949E", ipad:"#43C6A5", macbook:"#63B3ED", laptop:"#9F7AEA",
+  speaker:"#8B949E", smart_home:"#41BDF5", boiler:"#4299E1", zigbee:"#E8262B",
+  water_meter:"#3182CE", rainbird:"#38A169", router:"#8B949E", ap:"#805AD5",
+  server:"#8B949E", console:"#4C51BF", camera:"#63B3ED", printer:"#A0AEC0",
+  ap_device:"#1FA2FF", switch:"#8FA3B8", ethernet:"#8FA3B8",
+  generic:"#8FA3B8",
+};
+const tone = (k) => TONE[k] || TONE.generic;
+function toneVars(k){
+  const c = tone(k);
+  return `--tone:${c};--tint:${c}22`;
+}
+
+const Icon = ({k,cls}) => (k||"").startsWith("custom:")
+  ? html`<img class=${cls} src=${"/icons/"+k.slice(7)} alt="" loading="lazy"/>`
+  : html`<svg class=${cls} viewBox="0 0 24 24" fill="none"
+      dangerouslySetInnerHTML=${{__html: ICON[k]||ICON.generic}}></svg>`;
+
+/* ---------- helpers ---------- */
+const api = (u,o) => fetch(u,o).then(r=>{
+  if(r.status===401){ location.href="/login"; return Promise.reject(r); }
+  return r.ok ? r.json() : Promise.reject(r);
+});
+function fmtRate(bps){ // bytes/s -> bits legível
+  const b = (bps||0)*8;
+  if(b>=1e6) return [(b/1e6).toFixed(b>=1e7?0:1),"Mbps"];
+  if(b>=1e3) return [(b/1e3).toFixed(0),"kbps"];
+  return [Math.round(b),"bps"];
+}
+const Rate = ({bps,cls}) => { const [v,u]=fmtRate(bps);
+  return html`<span class=${cls}>${v}<span class="muted"> ${u}</span></span>`; };
+
+const SIG_DIM = "rgba(124,141,160,.30)";
+function SignalFan({level,color}){
+  const on = (n) => (level>=n ? color : SIG_DIM);
+  return html`<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round">
+    <path d="M2.6 8.4a14.5 14.5 0 0 1 18.8 0" stroke=${on(3)} stroke-width="2.4"/>
+    <path d="M5.9 12.1a9.6 9.6 0 0 1 12.2 0" stroke=${on(2)} stroke-width="2.4"/>
+    <path d="M9.2 15.8a4.7 4.7 0 0 1 5.6 0" stroke=${on(1)} stroke-width="2.4"/>
+    <circle cx="12" cy="19.4" r="1.5" fill=${on(1)}/>
+  </svg>`;
+}
+
+function sigLevel(sig){
+  // Limiares reais de projeto Wi-Fi (RSSI medido no AP):
+  //  >= -65  bom    -> taxas altas, estável, não cai
+  //  -66..-75 médio -> conecta bem, mas o MCS cai: perde velocidade
+  //  <= -76  fraco  -> retransmissões, perda de pacote, risco de queda
+  if(!sig) return {n:0,label:"—",color:SIG_DIM};
+  if(sig>=-65) return {n:3,label:"bom",color:"#2ECC71"};
+  if(sig>=-75) return {n:2,label:"médio · perde velocidade",color:"var(--transit)"};
+  return {n:1,label:"fraco · perde pacote",color:"var(--alert)"};
+}
+function smoothPath(pts){
+  if(pts.length<2) return "";
+  let d="M"+pts[0][0].toFixed(1)+" "+pts[0][1].toFixed(1);
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2;
+    const c1x=p1[0]+(p2[0]-p0[0])/6, c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6, c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=`C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+function Spark({data,color,h=34,fill=false,min=1,fixedMax=null,
+                auto=false,stepMs=0,scaleLabel=false}){
+  const gref=useRef(null);
+  const scRef=useRef(min);
+  // O buffer comeca vazio e leva minutos para encher. Desenhando so as
+  // amostras existentes, o traco ocupava um pedaco da largura e o
+  // deslocamento da animacao (240/(n-1)) virava um vao enorme com poucos
+  // pontos. Completando a esquerda com o valor mais antigo, o grafico nasce
+  // cheio e o passo fica sempre pequeno.
+  // Faltando amostras, completa a esquerda com zero — nunca repetindo o
+  // primeiro valor, que desenharia um trafego constante que nunca existiu.
+  const CHEIO=90;
+  const bruto=data||[];
+  const serie=bruto.length>=CHEIO ? bruto
+    : (bruto.length ? new Array(CHEIO-bruto.length).fill(0).concat(bruto) : []);
+  const n=serie.length;
+  const last=n?serie[n-1]:0;
+
+  // Rolagem suave: a coleta entrega uma amostra a cada poll_interval, entao o
+  // desenho pulava de uma vez. Aqui o traco entra deslocado e desliza ate a
+  // posicao final ao longo do intervalo — o dado continua o mesmo, so a
+  // apresentacao deixa de ser em degraus.
+  useEffect(()=>{
+    const g=gref.current;
+    if(!g||!stepMs||n<2) return;
+    const step=240/(n-1);
+    g.style.transition="none";
+    g.style.transform=`translateX(${step}px)`;
+    void g.getBoundingClientRect();
+    const id=requestAnimationFrame(()=>{
+      g.style.transition=`transform ${stepMs}ms linear`;
+      g.style.transform="translateX(0)";
+    });
+    return ()=>cancelAnimationFrame(id);
+  },[last,n,stepMs]);
+
+  if(n<2) return html`<svg width="100%" height=${h}></svg>`;
+  const W=240,H=h;
+
+  const peak=Math.max(...serie,min);
+  let mx;
+  if(auto){
+    // Escala que sobe na hora e desce devagar. Teto fixo na capacidade do
+    // link deixava trafego normal como uma linha reta no chao: 6 Mbps em uma
+    // escala de 600 Mbps ocupa 1% da altura.
+    let sc=scRef.current;
+    sc = peak>sc ? peak : sc*0.93 + peak*0.07;
+    if(fixedMax) sc=Math.min(sc,fixedMax);
+    scRef.current=Math.max(sc,min);
+    mx=scRef.current*1.25;
+  }else{
+    mx = fixedMax ? fixedMax : peak*1.15;
+  }
+
+  const pts=serie.map((v,i)=>[i/(n-1)*W, H-1.5-(Math.min(Math.max(0,v),mx)/mx)*(H-3)]);
+  const line=smoothPath(pts);
+  const area=line+` L${W} ${H} L0 ${H} Z`;
+  const svg=html`<svg width="100%" height=${h} viewBox=${`0 0 ${W} ${H}`}
+      preserveAspectRatio="none">
+    <g ref=${gref}>
+      ${fill&&html`<path d=${area} fill=${color} opacity="0.12"/>`}
+      <path d=${line} fill="none" stroke=${color} stroke-width="1.6"
+        vector-effect="non-scaling-stroke"/>
+    </g>
+  </svg>`;
+
+  if(!scaleLabel) return svg;
+  const [sv,su]=fmtRate(mx);
+  return html`<div class="sparkwrap">${svg}
+    <span class="sparkscale">${sv} ${su}</span></div>`;
+}
+
+/* ---------- saude: modal, grafico e reiniciar ---------- */
+const PWR = html`<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2.1" stroke-linecap="round">
+  <path d="M12 3.2v8.4"/><path d="M7.3 6.6a7.4 7.4 0 1 0 9.4 0"/></svg>`;
+
+function Modal({children,onClose}){
+  // Portal para o body: dentro do card nao funciona, porque .ap tem
+  // transform no :active e transform cria containing block para position:fixed
+  // (o modal encolheria para o tamanho do card e os cliques borbulhariam).
+  useEffect(()=>{
+    const esc = e => { if(e.key==="Escape" && onClose) onClose(); };
+    document.addEventListener("keydown", esc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return ()=>{ document.removeEventListener("keydown", esc);
+                 document.body.style.overflow = prev; };
+  },[onClose]);
+  return createPortal(html`<div class="mback"
+      onClick=${e=>{e.stopPropagation(); onClose&&onClose();}}>
+    <div class="mcard" onClick=${e=>e.stopPropagation()}>${children}</div>
+  </div>`, document.body);
+}
+
+function RebootBtn({id,name,toast,rede=false,aps=[]}){
+  const [ask,setAsk]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [sel,setSel]=useState(null);   // Set de ids escolhidos
+
+  const abrir=e=>{
+    e.stopPropagation();
+    setSel(new Set([id]));             // começa só com o roteador
+    setAsk(true);
+  };
+
+  const alterna=(k)=>setSel(s=>{
+    const n=new Set(s);
+    n.has(k) ? n.delete(k) : n.add(k);
+    return n;
+  });
+
+  const simples=async()=>{
+    setAsk(false); setBusy(true);
+    try{
+      await api("/api/reboot",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id})});
+      toast(`${name} reiniciando…`,"var(--transit)");
+    }catch(e){ toast(`Falha ao reiniciar ${name}`,"var(--alert)"); }
+    setTimeout(()=>setBusy(false),4000);
+  };
+
+  const lote=async()=>{
+    const ids=[...sel];
+    setAsk(false); setBusy(true);
+    try{
+      const r=await api("/api/reboot/batch",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ids})});
+      const nOk=(r.aps||[]).filter(a=>a.ok).length + (r.gateway?1:0);
+      toast(`${nOk} equipamento${nOk>1?"s":""} reiniciando…`,"var(--transit)");
+      if(r.erros&&r.erros.length) toast(r.erros[0],"var(--alert)");
+    }catch(e){ toast("Falha ao reiniciar","var(--alert)"); }
+    setTimeout(()=>setBusy(false),8000);
+  };
+
+  const marcados = sel? sel.size : 0;
+  const gwMarcado = sel? sel.has(id) : false;
+  const todosAps = sel && aps.length && aps.every(a=>sel.has(a.id));
+
+  return html`<button class="pwr" title=${"Reiniciar "+name} disabled=${busy}
+      onClick=${abrir}>${PWR}</button>
+    ${ask && html`<${Modal} onClose=${()=>setAsk(false)}>
+      ${rede ? html`
+        <div class="mtitle">Reiniciar equipamentos</div>
+        <div class="mtext">Marque o que deve reiniciar. Os APs vão primeiro e o
+          roteador por último — eles ficam atrás dele, então na ordem inversa o
+          comando não chegaria.</div>
+
+        <div class="rblist">
+          <label class=${"rbitem"+(gwMarcado?" on":"")}>
+            <input type="checkbox" checked=${gwMarcado}
+              onChange=${()=>alterna(id)}/>
+            <span class="rbnm">${name}</span>
+            <span class="rbtag">roteador</span>
+          </label>
+          ${aps.map(a=>html`
+            <label key=${a.id} class=${"rbitem"+(sel.has(a.id)?" on":"")}>
+              <input type="checkbox" checked=${sel.has(a.id)}
+                onChange=${()=>alterna(a.id)}/>
+              <span class="rbnm">${a.name}</span>
+              <span class="rbtag">AP</span>
+            </label>`)}
+        </div>
+
+        <div class="rbquick">
+          <button class="iotb" onClick=${()=>setSel(new Set([id]))}
+            >só o roteador</button>
+          <button class="iotb" onClick=${()=>setSel(new Set(aps.map(a=>a.id)))}
+            >só os APs</button>
+          <button class=${"iotb"+(todosAps&&gwMarcado?" sec":"")}
+            onClick=${()=>setSel(new Set([id,...aps.map(a=>a.id)]))}
+            >tudo</button>
+        </div>
+
+        ${marcados>1 && html`<div class="rbwarn">
+          ${gwMarcado && todosAps
+            ? "A rede inteira cai por 2 a 3 minutos, este painel junto. Ele volta sozinho."
+            : `${marcados} equipamentos saem do ar por 1 a 2 minutos.`}
+        </div>`}
+
+        <div class="mrow">
+          <button class="mbtn" onClick=${()=>setAsk(false)}>Cancelar</button>
+          <button class="mbtn danger" disabled=${!marcados} onClick=${lote}
+            >Reiniciar ${marcados}</button>
+        </div>`
+      : html`
+        <div class="mtitle">Reiniciar ${name}?</div>
+        <div class="mtext">O equipamento sai do ar por 1 a 2 minutos. Os
+          dispositivos conectados a ele caem e só voltam quando ele subir.</div>
+        <div class="mrow">
+          <button class="mbtn"
+            onClick=${e=>{e.stopPropagation(); setAsk(false);}}>Cancelar</button>
+          <button class="mbtn danger"
+            onClick=${e=>{e.stopPropagation(); simples();}}>Reiniciar</button>
+        </div>`}
+    <//>`}`;
+}
+
+const GLOBE = html`<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+  <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>
+  <path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z"/></svg>`;
+const GLOBE_OFF = html`<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+  <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>
+  <path d="M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z"/>
+  <path d="M4 4l16 16" stroke-width="2.2"/></svg>`;
+
+function ApWanBtn({toast}){
+  const [blocked,setBlocked]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const [ask,setAsk]=useState(false);
+  const carrega=()=>api("/api/ap-internet").then(r=>setBlocked(r.blocked)).catch(()=>{});
+  useEffect(()=>{ carrega(); },[]);
+
+  const aplicar=async(novo)=>{
+    setAsk(false); setBusy(true);
+    try{
+      await api("/api/ap-internet",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({blocked:novo})});
+      setBlocked(novo);
+      toast(novo? "Internet dos APs bloqueada"
+                : "Internet dos APs liberada","var(--transit)");
+    }catch(e){ toast("Falha ao alterar firewall","var(--alert)"); }
+    setBusy(false);
+  };
+
+  if(blocked===null) return null;
+  return html`<button class=${"pwr globe"+(blocked?" blk":"")} disabled=${busy}
+      title=${blocked?"Internet dos APs bloqueada — clique para liberar"
+                     :"APs com internet — clique para bloquear"}
+      onClick=${e=>{e.stopPropagation(); setAsk(true);}}
+      >${blocked?GLOBE_OFF:GLOBE}</button>
+    ${ask && html`<${Modal} onClose=${()=>setAsk(false)}>
+      <div class="mtitle">${blocked?"Liberar internet dos APs?":"Bloquear internet dos APs?"}</div>
+      <div class="mtext">${blocked
+        ? html`Os APs voltam a ter saída para a internet. Use enquanto atualiza
+            pacotes (<code>apk update</code>) e bloqueie de novo depois.`
+        : html`Os APs deixam de acessar a internet. Você continua gerenciando
+            eles normalmente — isso corta só a saída para a WAN, não o seu
+            acesso a eles. É uma boa prática de segurança deixar bloqueado no
+            dia a dia.`}</div>
+      <div class="mrow">
+        <button class="mbtn" onClick=${()=>setAsk(false)}>Cancelar</button>
+        <button class=${"mbtn"+(blocked?"":" danger")}
+          onClick=${()=>aplicar(!blocked)}
+          >${blocked?"Liberar":"Bloquear"}</button>
+      </div>
+    <//>`}`;
+}
+
+const BELL_ON = "\u{1F514}";   // 🔔
+const BELL_OFF = "\u{1F515}";  // 🔕
+
+function NotifBtn({toast}){
+  const [on,setOn]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const api2 = () => window.wifihubPush;
+  useEffect(()=>{
+    let vivo=true;
+    const p=api2(); if(!p) return;
+    p.isActive().then(v=>{ if(vivo) setOn(v); }).catch(()=>{});
+    return ()=>{ vivo=false; };
+  },[]);
+  const p=api2();
+  if(!p || !p.supported) return null;
+  const clique=async e=>{
+    e.stopPropagation();
+    setBusy(true);
+    try{ on ? await p.unsubscribe(toast) : await p.subscribe(toast); }
+    catch(err){ toast("Erro: "+err.message,"var(--alert)"); }
+    try{ setOn(await p.isActive()); }catch(_){}
+    setBusy(false);
+  };
+  return html`<button class=${"pwr bell "+(on?"bon":"boff")} disabled=${busy}
+    title=${on?"Notificações ativas neste aparelho":"Ativar notificações neste aparelho"}
+    onClick=${clique}>${on?BELL_ON:BELL_OFF}</button>`;
+}
+
+function PopMenu({anchor,onClose,children,wide=false}){
+  const box=useRef(null);
+  const [pos,setPos]=useState(null);
+
+  // A altura precisa ser MEDIDA, não presumida. Com 13 itens (mover + fixar)
+  // o menu passa de 500px; usando um palpite de 260 a lógica de virar para
+  // cima nunca disparava e o fim da lista ficava fora da tela.
+  useLayoutEffect(()=>{
+    const calc=()=>{
+      const el=anchor&&anchor.current;
+      if(!el||!box.current) return;
+      const r=el.getBoundingClientRect();
+      const vw=window.innerWidth, vh=window.innerHeight;
+      const W=Math.min(wide?300:240, vw-20);
+      const natural=box.current.scrollHeight;
+      const abaixo=vh-r.bottom-16;
+      const acima=r.top-16;
+
+      let top,maxH;
+      if(natural<=abaixo){            // cabe embaixo inteiro
+        top=r.bottom+6; maxH=natural;
+      }else if(natural<=acima){       // cabe em cima inteiro
+        maxH=natural; top=r.top-6-natural;
+      }else{                          // não cabe: usa o lado maior e rola
+        if(abaixo>=acima){ top=r.bottom+6; maxH=abaixo; }
+        else{ maxH=acima; top=r.top-6-maxH; }
+      }
+      maxH=Math.max(160,maxH);
+      top=Math.max(10,Math.min(top,vh-maxH-10));
+      const left=Math.min(Math.max(10,r.right-W),vw-W-10);
+      setPos({left,top,W,maxH});
+    };
+    calc();
+    const t=setTimeout(calc,0);      // reavalia após a fonte carregar
+    window.addEventListener("resize",calc);
+    window.addEventListener("scroll",calc,true);
+    const esc=e=>{ if(e.key==="Escape"&&onClose) onClose(); };
+    document.addEventListener("keydown",esc);
+    return ()=>{
+      clearTimeout(t);
+      window.removeEventListener("resize",calc);
+      window.removeEventListener("scroll",calc,true);
+      document.removeEventListener("keydown",esc);
+    };
+  },[anchor,wide]);
+
+  // Renderiza escondido na primeira passada: sem estar no DOM não há altura
+  // para medir.
+  const estilo = pos
+    ? `left:${pos.left}px;top:${pos.top}px;width:${pos.W}px;max-height:${pos.maxH}px`
+    : `left:-9999px;top:0;width:${Math.min(wide?300:240,window.innerWidth-20)}px;visibility:hidden`;
+
+  return createPortal(html`
+    <div class="pmback" onClick=${e=>{e.stopPropagation(); onClose&&onClose();}}></div>
+    <div class="pmenu" ref=${box} style=${estilo}
+      onClick=${e=>e.stopPropagation()}>${children}</div>`, document.body);
+}
+
+function ZigbeeTab({meta,toast}){
+  const [dados,setDados]=useState(null);
+  const [sel,setSel]=useState("");         // "" = não usa Zigbee
+  const [busy,setBusy]=useState(false);
+  const carrega=()=>api("/api/zigbee").then(d=>{
+    setDados(d); setSel(d.channel!=null?String(d.channel):"");
+  }).catch(()=>setDados({channel:null,aps:[]}));
+  useEffect(()=>{ carrega(); },[]);
+
+  // Zigbee 11..26; mostra a frequência central para dar contexto
+  const canais=[]; for(let c=11;c<=26;c++) canais.push(c);
+  const mhz=c=>2405+(c-11)*5;
+
+  const salvar=async(aplicar)=>{
+    setBusy(true);
+    try{
+      const ch=sel===""?null:parseInt(sel);
+      const r=await api("/api/zigbee",{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({channel:ch,apply:aplicar})});
+      if(ch===null) toast("Zigbee desativado — Wi-Fi opera em todos os canais");
+      else if(!aplicar) toast("Canal salvo");
+      else if(r.mudancas.length) toast(`${r.mudancas.length} rádio(s) movido(s) para longe do Zigbee`);
+      else toast("Nenhum rádio precisou mudar — já estavam seguros");
+      if(r.erros&&r.erros.length) toast(r.erros[0],"var(--alert)");
+      await carrega();
+    }catch(e){ toast(e.message||"Falha","var(--alert)"); }
+    setBusy(false);
+  };
+
+  const rel=dados&&dados.relatorio;
+
+  return html`<div class="zbpane">
+    <div class="zbintro">
+      <b>Coexistência Zigbee × Wi-Fi.</b> Zigbee e Wi-Fi dividem a faixa de
+      2,4 GHz, e o Wi-Fi, mais forte, derruba sensores Zigbee quando os canais
+      se sobrepõem. Informe o canal da sua rede Zigbee e o painel afasta os
+      rádios de 2,4 GHz dos APs para não interferir. Se você não usa Zigbee,
+      deixe em <b>não uso</b> e o Wi-Fi opera livremente.
+    </div>
+
+    <div class="zbrow">
+      <label class="zblbl">Canal da rede Zigbee</label>
+      <select class="iotsel" disabled=${busy} value=${sel}
+        onChange=${e=>setSel(e.target.value)}>
+        <option value="">não uso Zigbee</option>
+        ${canais.map(c=>html`<option key=${c} value=${c}
+          >canal ${c} · ${mhz(c)} MHz</option>`)}
+      </select>
+    </div>
+
+    ${rel && html`<div class="zbinfo">
+      <div class="zbline"><span class="zbk">Wi-Fi seguros</span>
+        <span class="zbsafe">${rel.wifi_seguros.join(", ")||"nenhum"}</span></div>
+      <div class="zbline"><span class="zbk">em conflito</span>
+        <span class="zbbad">${rel.wifi_conflitantes.join(", ")}</span></div>
+      <div class="zbhint">O painel usa preferencialmente ${rel.recomendado!=null
+        ?`o canal ${rel.recomendado}`:"um canal livre"} nos APs 2,4 GHz.</div>
+    </div>`}
+
+    ${dados&&dados.aps&&dados.aps.length>0 && html`<div class="zbaps">
+      <div class="zbaptitle">Rádios 2,4 GHz agora</div>
+      ${dados.aps.map(a=>html`<div key=${a.ap+a.radio} class="zbap">
+        <span class="zbapn">${a.ap_name}</span>
+        <span class=${"zbch "+(a.seguro?"ok":"bad")}>canal ${a.canal_atual||"auto"}</span>
+        ${!a.seguro && html`<span class="zbarrow">→ ${a.sugerido}</span>`}
+      </div>`)}
+    </div>`}
+
+    <div class="mrow" style="justify-content:flex-start">
+      <button class="btn" disabled=${busy} onClick=${()=>salvar(true)}
+        >${sel===""?"Salvar":"Aplicar e ajustar APs"}</button>
+      ${sel!=="" && html`<button class="mbtn" disabled=${busy}
+        onClick=${()=>salvar(false)}>só salvar</button>`}
+    </div>
+  </div>`;
+}
+
+function IotTab({meta,toast}){
+  const [lista,setLista]=useState(null);
+  const [salvando,setSalvando]=useState("");
+  const [ask,setAsk]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const carrega=()=>api("/api/iot").then(setLista).catch(()=>setLista([]));
+  useEffect(()=>{ carrega(); const iv=setInterval(carrega,10000);
+                  return ()=>clearInterval(iv); },[]);
+
+  const nomeAp = id => id==="wired" ? "cabo"
+    : ((meta?.aps||[]).find(a=>a.id===id)||{}).name || id || "—";
+
+  const mudar=async(d,apId)=>{
+    setSalvando(d.mac);
+    try{
+      await api(`/api/devices/${d.mac}`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pref_ap:apId})});
+      if(apId && d.online && d.ap_atual && d.ap_atual!==apId){
+        await api("/api/steer",{method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({mac:d.mac,target_ap:apId})});
+      }
+      toast(apId? `${d.name} fixado em ${nomeAp(apId)}` : `${d.name} solto`);
+      await carrega();
+    }catch(e){ toast("Falha ao salvar","var(--alert)"); }
+    setSalvando("");
+  };
+
+  const lote=async(acao)=>{
+    setAsk(null); setBusy(true);
+    try{
+      if(acao==="fixar"){
+        const r=await api("/api/pin/iot",{method:"POST"});
+        toast(r.fixados.length
+          ? `${r.fixados.length} fixados (${r.ja_estavam} já estavam)`
+          : `Nada a mudar: ${r.ja_estavam} já fixados`);
+      }else{
+        const r=await api("/api/unpin/iot",{method:"POST"});
+        toast(`${r.soltos} soltos`);
+      }
+      await carrega();
+    }catch(e){ toast("Falha na operação","var(--alert)"); }
+    setBusy(false);
+  };
+
+  const fixados=(lista||[]).filter(d=>d.pref_ap).length;
+  const fora=(lista||[]).filter(d=>d.pref_ap&&d.online&&d.ap_atual&&d.ap_atual!==d.pref_ap).length;
+
+  return html`<div class="iotpane">
+    <div class="iothead">
+      <div>
+        <div class="iotcount">${fixados} <span>de ${(lista||[]).length} fixados</span></div>
+        ${fora>0 && html`<div class="iotwarn">${fora} fora do AP escolhido</div>`}
+      </div>
+      <div class="iotacts">
+        <button class="iotb" disabled=${busy} onClick=${()=>setAsk("fixar")}
+          >📌 fixar onde estão</button>
+        <button class="iotb sec" disabled=${busy} onClick=${()=>setAsk("soltar")}
+          >soltar todos</button>
+      </div>
+    </div>
+
+    ${lista===null ? html`<div class="mempty">carregando…</div>`
+     : !lista.length ? html`<div class="mempty">
+         Nenhum dispositivo na VLAN de IoT.<br/>
+         <span style="font-size:12px">Confira <code>iot.subnets</code> no config.yml</span></div>`
+     : html`<div class="iotlist">
+        ${lista.map(d=>{
+          const desalinhado = d.pref_ap && d.online && d.ap_atual && d.ap_atual!==d.pref_ap;
+          return html`<div key=${d.mac} class=${"iotrow"+(d.online?"":" off")}>
+            <${Icon} k=${d.icon}/>
+            <div class="iotinfo">
+              <div class="iotnm">${d.name}
+                ${!d.online && html`<span class="linkchip">offline</span>`}
+                ${d.band && html`<span class="band">${d.band}</span>`}
+                ${d.signal!=null && d.online && html`<span class="linkchip">${d.signal} dBm</span>`}</div>
+              <div class="iotsub">${d.ip||d.mac}
+                ${d.online && html`<span> · agora em <b>${nomeAp(d.ap_atual)}</b></span>`}
+                ${desalinhado && html`<span class="fora"> · fora do fixado</span>`}</div>
+            </div>
+            <select class="iotsel" disabled=${salvando===d.mac}
+              value=${d.pref_ap||""}
+              onChange=${e=>mudar(d,e.target.value)}>
+              <option value="">sem preferência</option>
+              ${(meta?.aps||[]).map(a=>html`<option key=${a.id} value=${a.id}>${a.name}</option>`)}
+            </select>
+          </div>`;
+        })}
+      </div>`}
+
+    ${ask && html`<${Modal} onClose=${()=>setAsk(null)}>
+      <div class="mtitle">${ask==="fixar"?"Fixar os IoT?":"Soltar os IoT?"}</div>
+      <div class="mtext">${ask==="fixar"
+        ? html`Cada IoT online passa a ficar preso ao AP em que está
+            <b>neste momento</b>. Confira a lista antes — depois de uma queda de
+            energia eles podem ter se espalhado, e fixar agora congelaria isso.`
+        : html`Todos os IoT voltam a fazer roaming livre entre os APs.`}</div>
+      <div class="mrow">
+        <button class="mbtn" onClick=${()=>setAsk(null)}>Cancelar</button>
+        <button class=${"mbtn"+(ask==="fixar"?"":" danger")}
+          onClick=${()=>lote(ask)}>${ask==="fixar"?"Fixar":"Soltar"}</button>
+      </div>
+    <//>`}
+  </div>`;
+}
+
+const HMET={
+  cpu:{label:"CPU",suffix:"%",color:"var(--signal)",cap:100},
+  npu:{label:"NPU",suffix:"%",color:"var(--blue)",cap:100},
+  mem:{label:"Memória",suffix:"%",color:"var(--up)",cap:100},
+  temp:{label:"Temperatura",suffix:"°C",color:"var(--transit)",cap:null},
+  load:{label:"Carga",suffix:"",color:"var(--muted)",cap:null},
+};
+const WINS=[["-1h","1h","30s"],["-6h","6h","2m"],["-24h","24h","10m"],["-7d","7d","1h"]];
+
+function BigChart({data,color,suffix,cap}){
+  const vals=(data||[]).map(d=>d.v).filter(v=>v!=null);
+  if(vals.length<2) return html`<div class="mempty">
+    ainda não há histórico suficiente neste período</div>`;
+  const W=560,H=180,P=8;
+  const raw_hi=Math.max(...vals), raw_lo=Math.min(...vals);
+  const hi=cap? Math.max(raw_hi*1.15, cap*0.25) : raw_hi*1.12||1;
+  const lo=Math.max(0, raw_lo-(hi-raw_lo)*0.12);
+  const rng=(hi-lo)||1;
+  const n=vals.length;
+  const pts=vals.map((v,i)=>[P+i/(n-1)*(W-2*P), H-P-((v-lo)/rng)*(H-2*P)]);
+  const line=smoothPath(pts);
+  const area=line+` L${W-P} ${H} L${P} ${H} Z`;
+  const avg=vals.reduce((a,b)=>a+b,0)/n;
+  const t0=data[0]&&new Date(data[0].t), t1=data[data.length-1]&&new Date(data[data.length-1].t);
+  const hhmm=d=>d? d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}) : "";
+  const f=v=>(Math.abs(v)>=100? v.toFixed(0) : v.toFixed(1));
+  return html`<div>
+    <svg width="100%" height=${H} viewBox=${`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <line x1=${P} y1=${H/2} x2=${W-P} y2=${H/2} stroke="var(--line)"
+        stroke-width="1" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"/>
+      <path d=${area} fill=${color} opacity="0.13"/>
+      <path d=${line} fill="none" stroke=${color} stroke-width="1.8"
+        vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div class="mstats">
+      <span>máx <b>${f(raw_hi)}${suffix}</b></span>
+      <span>méd <b>${f(avg)}${suffix}</b></span>
+      <span>mín <b>${f(raw_lo)}${suffix}</b></span>
+      <span style="margin-left:auto">${hhmm(t0)} → ${hhmm(t1)}</span>
+    </div>
+  </div>`;
+}
+
+function HealthModal({host,hostName,metric,onClose}){
+  const m=HMET[metric]||{label:metric,suffix:"",color:"var(--signal)",cap:null};
+  const [win,setWin]=useState("-6h");
+  const [data,setData]=useState(null);
+  useEffect(()=>{
+    let ok=true; setData(null);
+    const w=WINS.find(x=>x[0]===win)||WINS[1];
+    api(`/api/history?entity=health&id=${encodeURIComponent(host)}`
+        +`&metric=${metric}&window=${win}&every=${w[2]}`)
+      .then(r=>{ if(ok) setData(r||[]); }).catch(()=>{ if(ok) setData([]); });
+    return ()=>{ ok=false; };
+  },[host,metric,win]);
+  return html`<${Modal} onClose=${onClose}>
+    <div class="mtitle">${m.label} · ${hostName}
+      <button class="x" onClick=${onClose}>×</button></div>
+    <div class="mwins">
+      ${WINS.map(w=>html`<button key=${w[0]}
+        class=${"mwin"+(win===w[0]?" on":"")}
+        onClick=${()=>setWin(w[0])}>${w[1]}</button>`)}
+    </div>
+    ${data===null
+      ? html`<div class="mempty">carregando…</div>`
+      : html`<${BigChart} data=${data} color=${m.color} suffix=${m.suffix} cap=${m.cap}/>`}
+  <//>`;
+}
+
+/* ---------- app ---------- */
+const CAP=90; // amostras guardadas p/ sparkline
+function App(){
+  const [meta,setMeta]=useState(null);
+  const [st,setSt]=useState(null);
+  const [tab,setTab]=useState("rede");
+  const [sel,setSel]=useState(null);
+  const [toasts,setToasts]=useState([]);
+  const [hm,setHm]=useState(null);   // {host,name,metric} do grafico de saude
+  const hist=useRef({routerD:[],routerU:[],ap:{},client:{}});
+  const [semeado,setSemeado]=useState(false);
+
+  // O buffer dos sparklines vive no navegador e zera a cada recarga. Sem isto
+  // o gráfico nasce vazio e leva 7 minutos para encher. Aqui ele é semeado com
+  // o histórico real do InfluxDB — dado de verdade, não um passado inventado.
+  useEffect(()=>{
+    if(!meta) return;
+    let vivo=true;
+    const puxa=(qs)=>api("/api/history?"+qs)
+      .then(r=>(r||[]).map(p=>p.v||0)).catch(()=>[]);
+    const janela="window=-8m&every=5s";
+    Promise.all([
+      puxa(`entity=router&metric=rx_rate&${janela}`),   // download
+      puxa(`entity=router&metric=tx_rate&${janela}`),   // upload
+      ...(meta.aps||[]).map(a=>puxa(`entity=ap&id=${a.id}&metric=tx_rate&${janela}`)),
+      ...(meta.aps||[]).map(a=>puxa(`entity=ap&id=${a.id}&metric=rx_rate&${janela}`)),
+    ]).then(res=>{
+      if(!vivo) return;
+      const h=hist.current, nAp=(meta.aps||[]).length;
+      const corta=v=>v.slice(-CAP);
+      if(!h.routerD.length) h.routerD=corta(res[0]);
+      if(!h.routerU.length) h.routerU=corta(res[1]);
+      (meta.aps||[]).forEach((a,i)=>{
+        const dl=res[2+i]||[], ul=res[2+nAp+i]||[];
+        const n=Math.max(dl.length,ul.length);
+        if(n && !(h.ap[a.id]||[]).length)
+          h.ap[a.id]=corta(Array.from({length:n},(_,k)=>(dl[k]||0)+(ul[k]||0)));
+      });
+      setSemeado(true);
+    });
+    return ()=>{ vivo=false; };
+  },[meta]);
+
+  const toast=(msg,color)=>{ const id=Math.random();
+    setToasts(t=>[...t,{id,msg,color}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3200); };
+
+  useEffect(()=>{ api("/api/meta").then(setMeta); },[]);
+
+  useEffect(()=>{
+    let stop=false;
+    const tick=async()=>{ try{
+      const s=await api("/api/state");
+      if(stop) return;
+      const h=hist.current;
+      if(s.extra){ const e=s.extra;
+        (h.ap[e.id]=h.ap[e.id]||[]).push((e.rx_rate||0)+(e.tx_rate||0));
+        if(h.ap[e.id].length>CAP)h.ap[e.id].shift(); }
+      const r=s.router||{};
+      h.routerD.push(r.wan_rx_rate||0); if(h.routerD.length>CAP)h.routerD.shift();
+      h.routerU.push(r.wan_tx_rate||0); if(h.routerU.length>CAP)h.routerU.shift();
+      (s.aps||[]).forEach(a=>{ (h.ap[a.id]=h.ap[a.id]||[]).push((a.rx_rate||0)+(a.tx_rate||0));
+        if(h.ap[a.id].length>CAP)h.ap[a.id].shift();
+        a.clients.forEach(c=>{ (h.client[c.mac]=h.client[c.mac]||[]).push((c.rx_rate||0)+(c.tx_rate||0));
+          if(h.client[c.mac].length>CAP)h.client[c.mac].shift(); });
+      });
+      if(s.extra&&s.extra.clients){ s.extra.clients.forEach(c=>{
+        (h.client[c.mac]=h.client[c.mac]||[]).push((c.rx_rate||0)+(c.tx_rate||0));
+        if(h.client[c.mac].length>CAP)h.client[c.mac].shift(); }); }
+      setSt(s);
+    }catch(e){} };
+    tick(); const iv=setInterval(tick,(meta?.poll_interval||5)*1000);
+    return ()=>{stop=true;clearInterval(iv);};
+  },[meta]);
+
+  if(!st) return html`<div class="wrap"><div class="empty">conectando aos rádios…</div></div>`;
+  const r=st.router||{};
+  const reloadMeta=()=>api("/api/meta").then(setMeta).catch(()=>{});
+  const upIcon=async(file)=>{
+    const fd=new FormData(); fd.append("file",file); fd.append("strip_bg","true");
+    toast("Enviando ícone…","var(--transit)");
+    try{
+      const r=await fetch("/api/icons",{method:"POST",body:fd});
+      if(!r.ok) throw new Error(await r.text());
+      toast("Ícone adicionado","var(--signal)"); reloadMeta();
+    }catch(e){ toast("Falha ao enviar o ícone","var(--alert)"); }
+  };
+  const delIcon=async(id)=>{
+    try{ await api(`/api/icons/${id}`,{method:"DELETE"}); toast("Ícone removido"); reloadMeta(); }
+    catch(e){ toast("Falha ao remover","var(--alert)"); }
+  };
+
+  const pollMs=(meta?.poll_interval||5)*1000;      // ritmo da animação = ritmo da coleta
+  const dlMax=(meta?.link_down_mbps||600)*1e6/8;   // teto absoluto: capacidade do link
+  const ulMax=(meta?.link_up_mbps||300)*1e6/8;     // bytes/s p/ teto do gráfico de upload
+  const groups=(st.aps||[]).concat(st.extra&&st.extra.client_count>0?[st.extra]:[])
+    .concat(st.offline&&st.offline.client_count>0?[st.offline]:[]);
+  const selAp=groups.find(a=>a&&a.id===sel);
+
+  return html`<div class="wrap">
+    <div class="top">
+      <div class="logo"><span class="dot"></span>Rede Casa Cabral</div>
+      <${ApWanBtn} toast=${toast}/>
+      <${NotifBtn} toast=${toast}/>
+      ${meta?.gateway?.id && html`<${RebootBtn} id=${meta.gateway.id}
+        name=${meta.gateway.name||"roteador"} toast=${toast}
+        rede=${true} aps=${meta.aps||[]}/>`}
+      <button class="logout" title="Sair" onClick=${async()=>{
+        await fetch("/api/logout",{method:"POST"}); location.href="/login";
+      }}>sair</button>
+    </div>
+
+    <div class="toprow">
+    <div class="hero">
+      <div class="herohead">
+        <div class="eyebrow">Tráfego da internet</div>
+      </div>
+      <div class="herocharts">
+        <div class="hchart">
+          <div class="hlbl"><span class="arrow dl">↓</span> Download</div>
+          <div class="hval dl">${fmtRate(r.wan_rx_rate)[0]}<small>${fmtRate(r.wan_rx_rate)[1]}</small></div>
+          <div class="htrace"><${Spark} data=${hist.current.routerD} color="var(--down)"
+            h=${38} fixedMax=${dlMax} auto scaleLabel stepMs=${pollMs} fill/></div>
+        </div>
+        <div class="hchart">
+          <div class="hlbl"><span class="arrow ul">↑</span> Upload</div>
+          <div class="hval ul">${fmtRate(r.wan_tx_rate)[0]}<small>${fmtRate(r.wan_tx_rate)[1]}</small></div>
+          <div class="htrace"><${Spark} data=${hist.current.routerU} color="var(--up)"
+            h=${38} fixedMax=${ulMax} auto scaleLabel stepMs=${pollMs} fill/></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onlinebox">
+      <div class="eyebrow">Clientes online</div>
+      <div class="obig">${r.clients_total??0}</div>
+      <div class="osub">
+        <span><b>${(st.aps||[]).reduce((a,x)=>a+(x.client_count||0),0)}</b> wifi</span>
+        <span><b>${st.extra?.client_count||0}</b> cabo</span>
+        <span><b>${(st.aps||[]).filter(a=>a.online).length}/${(st.aps||[]).length}</b> APs</span>
+      </div>
+    </div>
+    </div>
+
+    <${GatewayHealth} h=${r.health} name=${meta?.gateway?.name}
+              host=${meta?.gateway?.id}
+              onPick=${m=>setHm({host:meta.gateway.id,name:meta.gateway.name||"roteador",metric:m})}/>
+
+    <div class="tabs">
+      <button class=${"tab"+(tab==="rede"?" active":"")} onClick=${()=>setTab("rede")}>Rede</button>
+      <button class=${"tab"+(tab==="uso"?" active":"")} onClick=${()=>setTab("uso")}>Consumo</button>
+      <button class=${"tab"+(tab==="fwd"?" active":"")} onClick=${()=>setTab("fwd")}>Redirecionamentos</button>
+      <button class=${"tab"+(tab==="fw"?" active":"")} onClick=${()=>setTab("fw")}>Regras Firewall</button>
+      <button class=${"tab"+(tab==="iot"?" active":"")} onClick=${()=>setTab("iot")}>Fixar IoT</button>
+      <button class=${"tab"+(tab==="zigbee"?" active":"")} onClick=${()=>setTab("zigbee")}>Zigbee</button>
+    </div>
+
+    ${tab==="rede" ? html`
+      <div class="aps">
+        ${groups.map(a=> html`
+          ${a.kind==="offline"
+            ? html`<div key=${a.id} class=${"ap off"+(a.id===sel?" sel":"")}
+                onClick=${()=>setSel(a.id===sel?null:a.id)}>
+                <div class="head"><${Icon} k="generic" cls="apic"/>
+                  <span class="nm">${a.name}</span>
+                  <span class="cnt">${a.client_count} dev</span></div>
+                <div class="rates"><span class="muted" style="font-size:12px">
+                  conhecidos que não estão na rede agora</span></div>
+                <div class="offpv">
+                  ${a.clients.slice(0,4).map(c=>html`<span key=${c.mac} class="offchip">
+                    ${c.name}</span>`)}
+                  ${a.client_count>4? html`<span class="offchip more">
+                    +${a.client_count-4}</span>` : null}
+                </div>
+              </div>`
+            : a.kind==="wired"
+            ? html`<div key=${a.id} class=${"ap"+(a.id===sel?" sel":"")} onClick=${()=>setSel(a.id===sel?null:a.id)}>
+                <div class="head"><${Icon} k="switch" cls="apic"/><span class="nm">${a.name}</span>
+                  <span class="cnt">${a.client_count} dev</span></div>
+                ${a.metered
+                  ? html`<div class="rates">
+                      <span class="dl">↓ <${Rate} bps=${a.tx_rate}/></span>
+                      <span class="ul">↑ <${Rate} bps=${a.rx_rate}/></span></div>
+                    <div class="spark"><${Spark} data=${hist.current.ap[a.id]} color="var(--down)" min=${2000} fill/></div>`
+                  : html`<div class="rates"><span class="muted" style="font-size:12px">cabo · IP estático · fora do wifi</span></div>`}
+              </div>`
+            : html`<div key=${a.id} class=${"ap"+(a.id===sel?" sel":"")} onClick=${()=>setSel(a.id===sel?null:a.id)}>
+                <div class="head"><${Icon} k="ap_device" cls="apic"/><span class="nm">${a.name}</span>
+                  <span class="cnt">${a.online? a.client_count+" dev" : "offline"}</span>
+                  <${RebootBtn} id=${a.id} name=${a.name} toast=${toast}/></div>
+                <div class="rates">
+                  <span class="dl">↓ <${Rate} bps=${a.tx_rate}/></span>
+                  <span class="ul">↑ <${Rate} bps=${a.rx_rate}/></span></div>
+                <div class="spark"><${Spark} data=${hist.current.ap[a.id]} color=${a.online?"var(--signal)":"var(--muted2)"} min=${2000} fill/></div>
+              </div>`}
+          ${a.id===sel && html`<${Detail} key=${"detail-"+a.id} ap=${a} meta=${meta} hist=${hist.current}
+              onClose=${()=>setSel(null)} toast=${toast}
+              onUpIcon=${upIcon} onDelIcon=${delIcon}/>`}
+        `)}
+      </div>` : tab==="uso" ? html`<${Usage} meta=${meta} toast=${toast}/>`
+      : tab==="fw" ? html`<${Firewall} toast=${toast}/>`
+      : tab==="iot" ? html`<${IotTab} meta=${meta} toast=${toast}/>`
+      : tab==="zigbee" ? html`<${ZigbeeTab} meta=${meta} toast=${toast}/>`
+      : html`<${Redirects} toast=${toast}/>`}
+
+    ${hm && html`<${HealthModal} host=${hm.host} hostName=${hm.name}
+        metric=${hm.metric} onClose=${()=>setHm(null)}/>`}
+
+    <div class="toasts">
+      ${toasts.map(t=>html`<div key=${t.id} class="toast">
+        <span class="tb" style=${t.color?`background:${t.color}`:""}></span>${t.msg}</div>`)}
+    </div>
+  </div>`;
+}
+
+/* ---------- painel de clientes de um AP ---------- */
+function RadioBar({apId,toast}){
+  const [radios,setRadios]=useState(null);
+  const [busy,setBusy]=useState(false);
+  useEffect(()=>{ let ok=true;
+    api(`/api/aps/${apId}/radios`).then(r=>{ if(ok)setRadios(r); }).catch(()=>setRadios([]));
+    return ()=>{ok=false;}; },[apId]);
+
+  const apply=async(radio,field,value)=>{
+    setBusy(true);
+    toast("Aplicando… os clientes desse rádio caem por instantes","var(--transit)");
+    try{
+      await api(`/api/aps/${apId}/radios/${radio}`,{method:"POST",
+        headers:{"content-type":"application/json"},body:JSON.stringify({[field]:value})});
+      toast("Rádio atualizado","var(--signal)");
+      setRadios(rs=>rs.map(r=>r.radio===radio?{...r,[field]:value}:r));
+    }catch(e){ toast("Falha ao alterar rádio","var(--alert)"); }
+    setBusy(false);
+  };
+
+  if(radios===null) return html`<div class="radios"><span class="rnote">lendo rádios…</span></div>`;
+  if(!radios.length) return null;
+  return html`<div class="radios">
+    ${radios.map(r=>html`<div class="rchip" key=${r.radio}>
+      <span class=${"rb "+(r.band==="5G"?"b5":"b24")}>${r.band||r.radio}</span>
+      <span class="rlbl">canal</span>
+      <select disabled=${busy} value=${r.auto?"auto":String(r.channel||"")}
+        onChange=${e=>apply(r.radio,"channel",e.target.value)}>
+        <option value="auto">auto${r.auto&&r.channel?` (${r.channel})`:""}</option>
+        ${(r.channels||[]).map(c=>html`<option key=${c} value=${String(c)}>${c}</option>`)}
+      </select>
+      <span class="rlbl">potência</span>
+      <select disabled=${busy} value=${String(r.txpower||"")}
+        onChange=${e=>apply(r.radio,"txpower",parseInt(e.target.value))}>
+        ${(r.powers||[]).map(p=>html`<option key=${p} value=${String(p)}>${p} dBm</option>`)}
+      </select>
+      ${r.htmode&&html`<span class="rlbl">${r.htmode}</span>`}
+    </div>`)}
+    <span class="rnote">alterar reinicia o rádio${radios[0]&&radios[0].country?` · região ${radios[0].country}`:""}</span>
+  </div>`;
+}
+
+function Detail({ap,meta,hist,onClose,toast,onUpIcon,onDelIcon}){
+  const wired = ap.kind==="wired";
+  const [hm,setHm]=useState(null);
+  return html`<div class="detail">
+    ${hm && html`<${HealthModal} host=${hm.host} hostName=${hm.name}
+        metric=${hm.metric} onClose=${()=>setHm(null)}/>`}
+    <div class="dhead"><${Icon} k=${ap.kind==="offline"?"generic":wired?"switch":"ap_device"} cls="apic"/><span class="nm">${ap.name}</span>
+      <span class="muted mono" style="font-size:12px">${ap.client_count} ${
+        ap.kind==="offline"?"fora do ar":wired?"dispositivos":"conectados"}</span>
+      <button class="x" onClick=${onClose}>×</button></div>
+    ${!wired && ap.kind!=="offline" && ap.health && html`<div class="aphealth">
+      <${GatewayHealth} h=${ap.health} name=${ap.name} host=${ap.id}
+        onPick=${m=>setHm({host:ap.id,name:ap.name,metric:m})}/>
+    </div>`}
+    ${!wired && ap.kind!=="offline" && html`<${RadioBar} apId=${ap.id} toast=${toast}/>`}
+    ${ap.kind==="offline"
+      ? ap.clients.map(c=>html`<div key=${c.mac} class="offrow">
+          <div class="offic">
+            <${Icon} k=${c.icon}/>
+            ${c.link && html`<span class=${"offbadge "+c.link}
+              title=${c.link==="wifi"?"conecta por Wi-Fi":"conecta por cabo"}
+              >${c.link==="wifi"?"📶":"🔌"}</span>`}
+          </div>
+          <div>
+            <div class="offnm">${c.name}</div>
+            <div class="oi">${c.ip||c.mac}</div>
+          </div>
+          <span class="ow">${fmtAgo(c.last_seen)}</span>
+        </div>`)
+      : ap.clients.length? ap.clients.map(c=>html`<${Client} key=${c.mac} c=${c} ap=${ap}
+        meta=${meta} hist=${hist} toast=${toast} wired=${wired}
+        onUpIcon=${onUpIcon} onDelIcon=${onDelIcon}/>`)
+      : html`<div class="empty">nenhum device neste ${wired?"grupo":"AP"} agora</div>`}
+  </div>`;
+}
+
+function Client({c,ap,meta,hist,toast,wired,onUpIcon,onDelIcon}){
+  const [editing,setEditing]=useState(false);
+  const [name,setName]=useState(c.name);
+  const [picker,setPicker]=useState(false);
+  const picRef=useRef(null);
+  const [menu,setMenu]=useState(false);
+  const moveRef=useRef(null);
+  const [icon,setIcon]=useState(c.icon);
+  const [transit,setTransit]=useState(false);
+  useEffect(()=>{ if(!editing) setName(c.name); },[c.name,editing]);
+  useEffect(()=>setIcon(c.icon),[c.icon]);
+
+  const saveName=async()=>{ setEditing(false);
+    if(name.trim()&&name!==c.name){ await api(`/api/devices/${c.mac}`,{method:"POST",
+      headers:{"content-type":"application/json"},body:JSON.stringify({name:name.trim()})});
+      toast(`Renomeado para “${name.trim()}”`); } };
+  const setPic=async(k)=>{ setIcon(k); setPicker(false);
+    await api(`/api/devices/${c.mac}`,{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({icon:k})}); };
+  const move=async(target)=>{ setMenu(false); setTransit(true);
+    const tn=meta.aps.find(a=>a.id===target)?.name||target;
+    toast(`Movendo ${c.name} → ${tn}…`,"var(--transit)");
+    try{ const r=await api("/api/steer",{method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({mac:c.mac,target_ap:target})});
+      // nao dizer "pronto" quando os comandos falharam
+      if(r && r.ok===false){
+        toast(`Falha em ${r.falhas} de ${r.radios} rádios: ${r.erro||"erro"}`,
+              "var(--alert)");
+        setTimeout(()=>setTransit(false),1000);
+        return;
+      }
+      // avisa que e temporario: o device tem outro AP fixado e vai voltar
+      if(c.pref_ap && c.pref_ap!==target){
+        const pn=meta.aps.find(a=>a.id===c.pref_ap)?.name||c.pref_ap;
+        toast(`${c.name} → ${tn} (temporário: fixado em ${pn}, volta em 10 min)`,
+              "var(--transit)");
+      }else{
+        toast(`${c.name} liberado só no ${tn}`,"var(--signal)");
+      }
+    }catch(e){ toast("Falha ao mover","var(--alert)"); }
+    setTimeout(()=>setTransit(false),4000); };
+
+  const fixar=async(apId)=>{
+    setMenu(false);
+    try{
+      await api(`/api/devices/${c.mac}`,{method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({pref_ap:apId})});
+      if(apId){
+        const nome=(meta.aps.find(a=>a.id===apId)||{}).name||apId;
+        toast(`${c.name} fixado em ${nome}`);
+        if(apId!==ap.id) move(apId);      // já leva para lá
+      }else{
+        toast(`${c.name} liberado`);
+      }
+    }catch(e){ toast("Falha ao fixar","var(--alert)"); }
+  };
+
+  const sg=sigLevel(c.signal);
+  const prefNome = c.pref_ap
+    ? ((meta.aps.find(a=>a.id===c.pref_ap)||{}).name||c.pref_ap) : null;
+  return html`<div class=${"cli"+(transit?" transit":"")}>
+    <div>
+      <div class="ic" ref=${picRef} style=${toneVars(icon)}
+        onClick=${e=>{e.stopPropagation(); setPicker(p=>!p);}}><${Icon} k=${icon}/></div>
+      ${picker && html`<${PopMenu} anchor=${picRef} wide onClose=${()=>setPicker(false)}>
+        <div class="pick">
+        ${meta.icons.map(k=>html`<button key=${k} class=${k===icon?"on":""} title=${k}
+          style=${toneVars(k)} onClick=${()=>setPic(k)}><${Icon} k=${k}/></button>`)}
+        ${(meta.custom_icons||[]).map(ci=>html`
+          <button key=${ci.id} class=${"cust"+("custom:"+ci.id===icon?" on":"")} title=${ci.name}
+            style="--tone:var(--muted);--tint:rgba(124,141,160,.18)"
+            onClick=${()=>setPic("custom:"+ci.id)}>
+            <${Icon} k=${"custom:"+ci.id}/>
+            <span class="rm" title="remover"
+              onClick=${e=>{e.stopPropagation(); onDelIcon(ci.id);}}>×</span>
+          </button>`)}
+        <label class="up">
+          + enviar ícone (PNG/SVG)
+          <input type="file" accept="image/*,.svg" style="display:none"
+            onChange=${e=>{ const f=e.target.files[0]; if(f) onUpIcon(f); e.target.value=""; }}/>
+        </label>
+      </div>
+      <//>`}
+    </div>
+    <div class="cinfo">
+      <div class="cname">
+        ${editing? html`<input class="ci" value=${name} autofocus
+            onInput=${e=>setName(e.target.value)} onBlur=${saveName}
+            onKeyDown=${e=>e.key==="Enter"&&saveName()}/>`
+          : html`<span onClick=${()=>setEditing(true)}>${c.name}</span>`}
+        ${c.band&&html`<span class="band">${c.band}</span>`}
+        ${prefNome && html`<span class="pinned" title=${"Fixado em "+prefNome}
+          >📌 ${prefNome}</span>`}
+      </div>
+      <div class="cmeta">${c.ip||"—"} · ${c.mac} · ${c.signal} dBm</div>
+    </div>
+    ${wired ? html`
+      ${c.metered? html`
+        <div class="csp"><${Spark} data=${hist.client[c.mac]} color="var(--signal)" h=${26} min=${800}/></div>
+        <div class="crates">
+          <div class="dl">↓ ${fmtRate(c.tx_rate).join(" ")}</div>
+          <div class="ul">↑ ${fmtRate(c.rx_rate).join(" ")}</div>
+        </div>`:null}
+      <div class="wstate"><${Icon} k="ethernet" cls="ethic"/>
+        <span class=${"stat-dot "+(c.online?"on":"off")}></span>
+        ${c.online?"online":"offline"}</div>`
+    : html`
+      <div class="sig" title=${c.signal+" dBm · "+sg.label}>
+        <${SignalFan} level=${sg.n} color=${sg.color}/>
+      </div>
+      <div class="csp"><${Spark} data=${hist.client[c.mac]} color="var(--signal)" h=${26} min=${800}/></div>
+      <div class="crates">
+        <div class="dl">↓ ${fmtRate(c.tx_rate).join(" ")}</div>
+        <div class="ul">↑ ${fmtRate(c.rx_rate).join(" ")}</div>
+      </div>
+      <div>
+        <button class="move" ref=${moveRef}
+          onClick=${e=>{e.stopPropagation(); setMenu(m=>!m);}}>Mover</button>
+        ${menu && html`<${PopMenu} anchor=${moveRef} onClose=${()=>setMenu(false)}>
+          <div class="mh">Mover agora</div>
+          ${meta.aps.map(a=>html`<button key=${a.id} disabled=${a.id===ap.id}
+            onClick=${e=>{e.stopPropagation(); move(a.id);}}
+            >${a.name}${a.id===ap.id?" (atual)":""}</button>`)}
+          <div class="mh" style="margin-top:6px">Fixar sempre neste AP</div>
+          ${meta.aps.map(a=>html`<button key=${"p"+a.id}
+            class=${c.pref_ap===a.id?"prefon":""}
+            onClick=${e=>{e.stopPropagation(); fixar(a.id);}}
+            >📌 ${a.name}${c.pref_ap===a.id?" ✓":""}</button>`)}
+          ${c.pref_ap && html`<button class="prefoff"
+            onClick=${e=>{e.stopPropagation(); fixar("");}}>Soltar (sem preferência)</button>`}
+        <//>`}
+      </div>`}
+  </div>`;
+}
+
+/* ---------- redirecionamentos ---------- */
+function RuleForm({init,onSave,onCancel,busy}){
+  const [f,setF]=useState(init);
+  const ok=f.src_dport&&f.dest_ip&&f.dest_port;
+  return html`
+    <select value=${f.proto} onChange=${e=>setF({...f,proto:e.target.value})}>
+      <option value="tcp">TCP</option><option value="udp">UDP</option>
+      <option value="tcp udp">TCP+UDP</option></select>
+    <input class="f" placeholder="externa" value=${f.src_dport}
+      onInput=${e=>setF({...f,src_dport:e.target.value})}/>
+    <input class="f" placeholder="192.168.x.x" value=${f.dest_ip}
+      onInput=${e=>setF({...f,dest_ip:e.target.value})}/>
+    <input class="f" placeholder="interna" value=${f.dest_port}
+      onInput=${e=>setF({...f,dest_port:e.target.value})}/>
+    <input class="f" placeholder="nome (opcional)" value=${f.name}
+      onInput=${e=>setF({...f,name:e.target.value})}/>
+    <button class="btn" disabled=${!ok||busy} onClick=${()=>onSave(f)}>Salvar</button>
+    ${onCancel&&html`<button class="btn ghost" onClick=${onCancel}>✕</button>`}`;
+}
+
+
+/* ---------- consumo de dados ---------- */
+function fmtBytes(b){
+  if(!b||b<1) return ["0"," B"];
+  const u=["B","KB","MB","GB","TB"]; let i=0,v=b;
+  while(v>=1024&&i<u.length-1){v/=1024;i++;}
+  return [v>=100?v.toFixed(0):v.toFixed(1)," "+u[i]];
+}
+
+function UsageBars({down,up}){
+  const n=Math.max(down.length,up.length);
+  if(!n) return html`<div class="ubars"></div>`;
+  const mx=Math.max(...down,...up,1);
+  return html`<div class="ubars">
+    ${Array.from({length:n}).map((_,i)=>{
+      const d=down[i]||0, u=up[i]||0, tot=d+u;
+      const h=Math.max(2,Math.round((tot/mx)*34));
+      return html`<i key=${i} style=${`height:${h}px`}
+        title=${fmtBytes(tot).join("")}></i>`;
+    })}
+  </div>`;
+}
+
+
+function fmtAgo(ts){
+  if(!ts) return "nunca visto";
+  const d=Math.floor(Date.now()/1000)-ts;
+  if(d<90) return "agora há pouco";
+  if(d<3600) return `há ${Math.floor(d/60)} min`;
+  if(d<86400) return `há ${Math.floor(d/3600)}h`;
+  const dias=Math.floor(d/86400);
+  return dias===1? "ontem" : `há ${dias} dias`;
+}
+function fmtUptime(sec){
+  if(!sec) return "—";
+  const d=Math.floor(sec/86400), h=Math.floor((sec%86400)/3600), m=Math.floor((sec%3600)/60);
+  return d? `${d}d ${h}h` : h? `${h}h ${m}min` : `${m}min`;
+}
+function GaugeCell({label,value,suffix,sub,pct,small,onClick}){
+  const p=Math.max(0,Math.min(100,pct??0));
+  const cls = p>=85?"hot" : p>=65?"warn" : "";
+  return html`<div class=${"gcell"+(onClick?" click":"")} onClick=${onClick}
+      title=${onClick?"ver histórico":null}>
+    <div class="gl">${label}</div>
+    <div class=${"gv"+(String(value).length>9?" ip":"")}>${value}${suffix?html`<span style="font-size:12px;color:var(--muted)"> ${suffix}</span>`:null}</div>
+    ${sub?html`<div class="gs">${sub}</div>`:null}
+    ${pct!=null?html`<div class="gbar"><i class=${cls} style=${`width:${p}%`}></i></div>`:null}
+  </div>`;
+}
+function GatewayHealth({h,name,host,onPick}){
+  if(!h) return null;
+  const mb = b => b? (b/1048576).toFixed(0)+" MB" : "";
+  const pick = m => (host&&onPick)? (()=>onPick(m)) : null;
+  return html`<div class="ghealth">
+    ${h.cpu!=null? html`<${GaugeCell} label="CPU" value=${h.cpu} suffix="%"
+        sub=${h.load!=null?`carga ${h.load.toFixed(2)}`:null} pct=${h.cpu} onClick=${pick("cpu")}/>`:null}
+    ${h.npu!=null? html`<${GaugeCell} label="NPU" value=${h.npu} suffix="%"
+        sub="aceleração NSS" pct=${h.npu} onClick=${pick("npu")}/>`:null}
+    ${h.mem!=null? html`<${GaugeCell} label="Memória" value=${h.mem} suffix="%"
+        sub=${mb(h.mem_used)+" de "+mb(h.mem_total)} pct=${h.mem} onClick=${pick("mem")}/>`:null}
+    ${h.temp!=null? html`<${GaugeCell} label="Temperatura" value=${h.temp} suffix="°C"
+        sub=${name||"gateway"} pct=${Math.round((h.temp/95)*100)} onClick=${pick("temp")}/>`:null}
+    ${h.uptime!=null? html`<${GaugeCell} label="No ar" value=${fmtUptime(h.uptime)} sub="sem reiniciar"/>`:null}
+    ${h.wan_ip? html`<${GaugeCell} label="IP WAN" value=${h.wan_ip} sub="endereço público"/>`:null}
+  </div>`;
+}
+
+
+function UsageZoom({dev,period}){
+  const D=dev.dseries||[], U=dev.useries||[];
+  const n=Math.max(D.length,U.length);
+  const mx=Math.max(...D,...U,1);
+  const unit={day:"por hora",week:"por dia",month:"por dia",year:"por mês"}[period]||"";
+  return html`<div class="uzoom">
+    <div class="zh">
+      <span class="zt">${dev.name}</span>
+      <span class="zl">${unit}${dev.ip?" · "+dev.ip:""}${dev.where?" · "+dev.where:""}</span>
+    </div>
+    <div class="zbars">
+      ${Array.from({length:n}).map((_,i)=>{
+        const d=D[i]||0, u=U[i]||0;
+        const hd=Math.round((d/mx)*70), hu=Math.round((u/mx)*46);
+        return html`<div class="zcol" key=${i}
+          title=${`↓ ${fmtBytes(d).join("")}  ↑ ${fmtBytes(u).join("")}`}>
+          <i class="d" style=${`height:${Math.max(1,hd)}px`}></i>
+          <i class="u" style=${`height:${Math.max(1,hu)}px`}></i>
+        </div>`;
+      })}
+    </div>
+    <div class="zleg">
+      <span class="dl">↓ download <b>${fmtBytes(dev.down).join("")}</b></span>
+      <span class="ul">↑ upload <b>${fmtBytes(dev.up).join("")}</b></span>
+      <span class="muted">total <b>${fmtBytes(dev.total).join("")}</b></span>
+    </div>
+  </div>`;
+}
+
+function Usage({meta,toast}){
+  const [period,setPeriod]=useState("day");
+  const [data,setData]=useState(null);
+  const [open,setOpen]=useState(null);
+  useEffect(()=>{ let ok=true; setData(null);
+    api(`/api/usage?period=${period}`).then(d=>{ if(ok)setData(d); })
+      .catch(()=>setData({devices:[]}));
+    return ()=>{ok=false;}; },[period]);
+
+  const labels={day:"24 horas",week:"7 dias",month:"30 dias",year:"1 ano"};
+  const devs=data?.devices||[];
+  const totD=devs.reduce((a,d)=>a+d.down,0), totU=devs.reduce((a,d)=>a+d.up,0);
+
+  return html`<div>
+    <div class="useg">
+      ${["day","week","month","year"].map(p=>html`<button key=${p} class=${p===period?"on":""}
+        onClick=${()=>setPeriod(p)}>${labels[p]}</button>`)}
+    </div>
+    <div class="utot">
+      <div class="b"><div class="l">Download</div>
+        <div class="v dl">${fmtBytes(totD).join("")}</div></div>
+      <div class="b"><div class="l">Upload</div>
+        <div class="v ul">${fmtBytes(totU).join("")}</div></div>
+      <div class="b"><div class="l">Total</div>
+        <div class="v">${fmtBytes(totD+totU).join("")}</div></div>
+      <div class="b"><div class="l">Dispositivos</div>
+        <div class="v">${devs.length}</div></div>
+    </div>
+    <div class="card">
+      ${data===null? html`<div class="empty">carregando consumo…</div>`
+        : devs.length? devs.map(d=>html`
+          <div key=${d.mac}>
+            <div class="urow" onClick=${()=>setOpen(o=>o===d.mac?null:d.mac)}>
+              <div class="ic" style=${toneVars(d.icon)}><${Icon} k=${d.icon}/></div>
+              <div class="uinfo">
+                <div class="n">${d.name}</div>
+                <div class="w">${d.where||"—"}${d.ip?" · "+d.ip:""}</div>
+              </div>
+              <div class="uvals">
+                <div class="t">${fmtBytes(d.total).join("")}</div>
+                <div class="dl">↓ ${fmtBytes(d.down).join("")}</div>
+                <div class="ul">↑ ${fmtBytes(d.up).join("")}</div>
+              </div>
+              <${UsageBars} down=${d.dseries||[]} up=${d.useries||[]}/>
+            </div>
+            ${open===d.mac && html`<${UsageZoom} dev=${d} period=${period}/>`}
+          </div>`)
+        : html`<div class="empty">sem dados no período — o histórico começa a partir da primeira coleta</div>`}
+    </div>
+  </div>`;
+}
+
+function TrafficRules(){
+  const [rules,setRules]=useState(null);
+  useEffect(()=>{ api("/api/rules").then(setRules).catch(()=>setRules([])); },[]);
+  if(rules===null) return null;
+  if(!rules.length) return null;
+  return html`<div class="sect">
+    <div class="secth"><h3>Regras de tráfego</h3>
+      <span>liberam caminho entre zonas — não são redirecionamentos de porta</span></div>
+    <div class="card">
+      ${rules.map(r=>html`<div class="trow" key=${r.id}>
+        <div>
+          <div class="tn">${r.name}</div>
+          <div class="tp">
+            ${r.src_name||r.src_ip||r.src}${" → "}${r.dest_name||r.dest_ip||r.dest}
+            ${r.proto&&r.proto!=="all"?" · "+r.proto:""}${r.dest_port?" :"+r.dest_port:""}
+          </div>
+        </div>
+        <span class="zchip">${r.src} → ${r.dest}</span>
+        <span class=${"tgt "+r.target}>${r.target}</span>
+      </div>`)}
+    </div>
+  </div>`;
+}
+
+
+/* ---------- regras de firewall (VLAN a VLAN) ---------- */
+function Firewall({toast}){
+  const [fw,setFw]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const blank={name:"",src:"",dest:"",target:"ACCEPT",src_ip:"",dest_ip:"",proto:"",dest_port:""};
+  const [f,setF]=useState(blank);
+  const load=()=>api("/api/firewall").then(d=>{ setFw(d);
+    setF(x=>x.src?x:{...x,src:d.zones[0]?.name||"",dest:d.zones[1]?.name||d.zones[0]?.name||""});
+  }).catch(()=>setFw({zones:[],forwardings:[],rules:[]}));
+  useEffect(()=>{load();},[]);
+
+  const create=async()=>{
+    if(!f.src||!f.dest) return;
+    setBusy(true);
+    try{
+      await api("/api/rules",{method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify(f)});
+      toast("Regra criada e aplicada","var(--signal)");
+      setF({...blank,src:f.src,dest:f.dest}); load();
+    }catch(e){ toast("Falha ao criar regra","var(--alert)"); }
+    setBusy(false);
+  };
+  const del=async(r)=>{
+    if(!confirm(`Apagar a regra "${r.name}"?\n\n${r.src} → ${r.dest} · ${r.target}\nIsto altera o firewall do gateway imediatamente.`)) return;
+    setBusy(true);
+    try{ await api(`/api/rules/${r.id}`,{method:"DELETE"}); toast("Regra removida"); load(); }
+    catch(e){ toast("Falha ao remover","var(--alert)"); }
+    setBusy(false);
+  };
+
+  if(fw===null) return html`<div class="empty">carregando firewall…</div>`;
+  const zn=(fw.zones||[]).map(z=>z.name);
+
+  return html`<div>
+    <div class="secth"><h3>Zonas</h3><span>cada zona é uma VLAN/rede do gateway</span></div>
+    <div class="zones">
+      ${(fw.zones||[]).map(z=>html`<div class="zbox" key=${z.id}>
+        <div class="zn">${z.name}</div>
+        <div class="zd">${(z.networks||[]).join(", ")||"—"} · fwd ${z.forward}</div>
+      </div>`)}
+    </div>
+
+    <div class="secth"><h3>Encaminhamentos</h3>
+      <span>liberam a zona inteira para a outra</span></div>
+    <div class="fwdlist">
+      ${(fw.forwardings||[]).length? fw.forwardings.map(x=>html`
+        <span class="fwdchip" key=${x.id}>${x.src} <b>→</b> ${x.dest}</span>`)
+        : html`<span class="muted" style="font-size:12.5px">nenhum encaminhamento entre zonas</span>`}
+    </div>
+
+    <div class="secth"><h3>Regras</h3><span>controle fino entre VLANs</span></div>
+    <div class="card">
+      ${(fw.rules||[]).length? fw.rules.map(r=>html`<div class="trow" key=${r.id}>
+          <div>
+            <div class="tn">${r.name}</div>
+            <div class="tp">
+              ${r.src_name||r.src_ip||"toda a zona"} → ${r.dest_name||r.dest_ip||"toda a zona"}
+              ${r.proto&&r.proto!=="all"?" · "+r.proto:""}${r.dest_port?" :"+r.dest_port:""}
+            </div>
+          </div>
+          <span class="zchip">${r.src} → ${r.dest}</span>
+          <div class="rowacts">
+            <span class=${"tgt "+r.target}>${r.target}</span>
+            <button class="iconbtn del" title="Remover" onClick=${()=>del(r)}>×</button>
+          </div>
+        </div>`)
+        : html`<div class="empty">nenhuma regra entre zonas</div>`}
+
+      <div class="rulegrid">
+        <span class="rl">Nova regra entre VLANs</span>
+        <input class="f" placeholder="nome da regra" value=${f.name}
+          onInput=${e=>setF({...f,name:e.target.value})}/>
+        <select value=${f.src} onChange=${e=>setF({...f,src:e.target.value})}>
+          ${zn.map(z=>html`<option key=${z} value=${z}>de ${z}</option>`)}
+        </select>
+        <select value=${f.dest} onChange=${e=>setF({...f,dest:e.target.value})}>
+          ${zn.map(z=>html`<option key=${z} value=${z}>para ${z}</option>`)}
+        </select>
+        <input class="f" placeholder="IP destino (opcional)" value=${f.dest_ip}
+          onInput=${e=>setF({...f,dest_ip:e.target.value})}/>
+        <select value=${f.target} onChange=${e=>setF({...f,target:e.target.value})}>
+          <option value="ACCEPT">permitir</option>
+          <option value="REJECT">rejeitar</option>
+          <option value="DROP">descartar</option>
+        </select>
+        <button class="btn" disabled=${busy||!f.src||!f.dest} onClick=${create}>Criar</button>
+        <input class="f" placeholder="IP origem (opcional)" value=${f.src_ip}
+          onInput=${e=>setF({...f,src_ip:e.target.value})}/>
+        <select value=${f.proto} onChange=${e=>setF({...f,proto:e.target.value})}>
+          <option value="">todos os protocolos</option>
+          <option value="tcp">TCP</option><option value="udp">UDP</option>
+          <option value="tcp udp">TCP+UDP</option><option value="icmp">ICMP</option>
+        </select>
+        <input class="f" placeholder="porta destino (opcional)" value=${f.dest_port}
+          onInput=${e=>setF({...f,dest_port:e.target.value})}/>
+      </div>
+    </div>
+  </div>`;
+}
+
+function Redirects({toast}){
+  const [rules,setRules]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const [editId,setEditId]=useState(null);
+  const blank={proto:"tcp",src_dport:"",dest_ip:"",dest_port:"",name:""};
+  const load=()=>api("/api/redirects").then(setRules).catch(()=>setRules([]));
+  useEffect(()=>{load();},[]);
+
+  const create=async(f)=>{ setBusy(true);
+    try{ await api("/api/redirects",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify(f)}); toast("Regra criada e aplicada","var(--signal)"); load();
+    }catch(e){ toast("Falha ao criar regra","var(--alert)"); } setBusy(false); };
+  const save=async(id,f)=>{ setBusy(true);
+    try{ await api(`/api/redirects/${id}`,{method:"PUT",headers:{"content-type":"application/json"},
+      body:JSON.stringify(f)}); toast("Regra atualizada","var(--signal)"); setEditId(null); load();
+    }catch(e){ toast("Falha ao atualizar","var(--alert)"); } setBusy(false); };
+  const del=async(id,label)=>{
+    if(!confirm(`Apagar a regra "${label||id}"?\n\nIsto altera o firewall do gateway imediatamente.`)) return;
+    setBusy(true);
+    try{ await api(`/api/redirects/${id}`,{method:"DELETE"}); toast("Regra removida"); load(); }
+    catch(e){ toast("Falha ao remover","var(--alert)"); } setBusy(false); };
+
+  return html`<div>
+  <div class="card">
+    <div class="fwhead"><span>Proto</span><span>Externa</span>
+      <span>Destino</span><span>Interna</span><span></span></div>
+
+    ${rules===null? html`<div class="empty">carregando regras…</div>`
+      : rules.length? rules.map(x=> editId===x.id
+        ? html`<div class="fwrow" key=${x.id}><div class="fwedit">
+            <${RuleForm} busy=${busy}
+              init=${{proto:x.proto,src_dport:x.src_dport,dest_ip:x.dest_ip,dest_port:x.dest_port,name:x.name}}
+              onSave=${f=>save(x.id,f)} onCancel=${()=>setEditId(null)}/>
+          </div></div>`
+        : html`<div class="fwrow" key=${x.id}>
+            <span class=${"proto "+x.proto.replace(" ","")}>${x.proto}</span>
+            <span class="mono extcol">${x.src_dport}</span>
+            <div class="dcell">
+              <div class="dname">${x.dest_name||x.name||"—"}</div>
+              <div class="dip">${x.dest_ip} · porta ${x.src_dport}→${x.dest_port}</div>
+            </div>
+            <span class="mono intcol">${x.dest_port}</span>
+            <div class="rowacts">
+              <button class="iconbtn" title="Editar" onClick=${()=>setEditId(x.id)}>✎</button>
+              <button class="iconbtn del" title="Remover" onClick=${()=>del(x.id,x.dest_name||x.name)}>×</button>
+            </div>
+          </div>`)
+      : html`<div class="empty">nenhuma regra de redirecionamento no gateway</div>`}
+
+    <div class="fwadd">
+      <span class="addlbl">Nova regra</span>
+      <${RuleForm} init=${blank} onSave=${create} busy=${busy}/>
+    </div>
+  </div>
+  </div>`;
+}
+
+render(html`<${App}/>`, document.getElementById("app"));
+</script>
+</body>
+</html>
