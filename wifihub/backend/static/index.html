@@ -1600,6 +1600,7 @@ function RadioBar({apId,toast}){
 
   if(radios===null) return html`<div class="radios"><span class="rnote">lendo rádios…</span></div>`;
   if(!radios.length) return null;
+  const fmtmw = dbm => { const v=Math.pow(10,dbm/10); return v>=1000 ? ((v/1000)%1 ? (v/1000).toFixed(1) : (v/1000))+" W" : Math.round(v)+" mW"; };
   return html`<div class="radios">
     ${radios.map(r=>html`<div class="rchip" key=${r.radio}>
       <span class=${"rb "+(r.band==="5G"?"b5":"b24")}>${r.band||r.radio}</span>
@@ -1612,7 +1613,7 @@ function RadioBar({apId,toast}){
       <span class="rlbl">potência</span>
       <select disabled=${busy} value=${String(r.txpower||"")}
         onChange=${e=>apply(r.radio,"txpower",parseInt(e.target.value))}>
-        ${(r.powers||[]).map(p=>html`<option key=${p} value=${String(p)}>${p} dBm</option>`)}
+        ${(r.powers||[]).map(p=>html`<option key=${p} value=${String(p)}>${p} dBm (${fmtmw(p)})</option>`)}
       </select>
       ${r.htmode&&html`<span class="rlbl">${r.htmode}</span>`}
     </div>`)}

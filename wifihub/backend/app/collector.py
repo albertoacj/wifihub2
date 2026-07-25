@@ -341,25 +341,28 @@ async def _collect_once():
         vistos = {m: "wifi" for m in wifi_macs}
         # so marca cabo com prova de presenca (o filtro acima ja garante isso)
         vistos.update({c["mac"]: "cabo" for c in wired
-                       if c["mac"] not in wifi_macs})
+                       if c["mac"] not in wifi_macs and c.get("online")})
         await store.note_link(vistos)
     except Exception as exc:
         log.warning("note_link: %s", exc)
 
-    wired.sort(key=lambda c: _ip_key(c.get("ip")))
-    router["clients_total"] = total_clients + len(wired)
+    # No Switch entram só os cabeados de fato online; os offline (lease sem
+    # vizinho ativo, online=False) saem daqui e caem no bloco Offline.
+    wired_on = [c for c in wired if c.get("online")]
+    wired_on.sort(key=lambda c: _ip_key(c.get("ip")))
+    router["clients_total"] = total_clients + len(wired_on)
     # soma o tráfego dos cabeados (disponível quando o nlbwmon está ativo)
-    w_down = sum(c.get("tx_rate", 0.0) for c in wired)
-    w_up = sum(c.get("rx_rate", 0.0) for c in wired)
+    w_down = sum(c.get("tx_rate", 0.0) for c in wired_on)
+    w_up = sum(c.get("rx_rate", 0.0) for c in wired_on)
     extra = {"id": "wired", "name": "Switch", "kind": "wired",
-             "online": True, "clients": wired, "client_count": len(wired),
-             "metered": any(c.get("metered") for c in wired),
+             "online": True, "clients": wired_on, "client_count": len(wired_on),
+             "metered": any(c.get("metered") for c in wired_on),
              "rx_rate": round(w_up, 1), "tx_rate": round(w_down, 1)}
 
     # ---- quem esta na rede agora, e quem sumiu ----
     online_now = {(c.get("mac") or "").lower()
                   for a in aps_out for c in a["clients"]}
-    online_now |= {(c.get("mac") or "").lower() for c in wired}
+    online_now |= {(c.get("mac") or "").lower() for c in wired_on}
     online_now.discard("")
     presence.touch(online_now)
     presence.maybe_flush()
@@ -367,19 +370,25 @@ async def _collect_once():
     # So entram na lista os devices que voce nomeou ou deu icone: sem esse
     # filtro, todo MAC rotativo de visitante viraria uma linha de "offline".
     gone = []
+    OFFLINE_WINDOW = 7 * 86400   # 7 dias
+    now_ts = int(time.time())
     for mac, meta in device_store.all().items():
         mac = mac.lower()
         if mac in online_now:
             continue
-        if not (meta.get("name") or meta.get("icon")
-                or is_iot(meta.get("ip"))):
+        seen = presence.last_seen(mac)
+        known = meta.get("name") or meta.get("icon") or is_iot(meta.get("ip"))
+        recent = seen is not None and (now_ts - seen) <= OFFLINE_WINDOW
+        # nomeados/IoT sempre; e qualquer um visto nos últimos 7 dias, mesmo
+        # sem nome (a janela evita acumular MAC de visitante para sempre)
+        if not (known or recent):
             continue
         gone.append({"mac": mac,
                      "name": meta.get("name") or mac,
                      "icon": meta.get("icon") or "generic",
                      "ip": meta.get("ip"),
                      "link": meta.get("link") or "",
-                     "last_seen": presence.last_seen(mac)})
+                     "last_seen": seen})
     gone.sort(key=lambda d: d["last_seen"] or 0, reverse=True)
     offline = {"id": "offline", "name": "Offline", "kind": "offline",
                "online": True, "clients": gone, "client_count": len(gone)}
