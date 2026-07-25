@@ -64,6 +64,8 @@
       <div class="grow"><label id="t_ip"></label>
         <input id="gwhost" placeholder="192.168.0.1"></div>
     </div>
+    <label id="t_gwpwd"></label>
+    <input id="gwpwd" type="password" placeholder="••••••••">
     <div class="status pend" id="gwstatus"></div>
   </div>
 
@@ -76,8 +78,6 @@
   <div class="card">
     <h2 id="t_access"></h2>
     <p class="hint" id="t_accesshint"></p>
-    <label id="t_pwd"></label>
-    <input id="pwd" type="password" placeholder="••••••••">
     <div class="actions">
       <button class="btn ghost" id="testbtn"></button>
     </div>
@@ -102,11 +102,11 @@ const T = {
     gateway:"Gateway", gwname:"Name", ip:"IP address",
     aps:"Access points", addap:"+ Add access point", apname:"Name",
     access:"Access", accesshint:"Enter the router's root password. It's used once to install the key and is never stored.",
-    pwd:"root password (same for all devices)", showkey:"Show public key",
+    pwd:"root password", pwd_one:"root password", showkey:"Show public key",
     keyhint:"If automatic install fails, add this key to /etc/dropbear/authorized_keys on each device.",
     test:"Test & install key", testing:"testing…", save:"Save & start",
     saving:"saving…", saved:"Saved! Starting…",
-    ok:"connected", pending:"not tested", needall:"All devices must connect before saving.",
+    ok:"connected", radios:"radios", pending:"not tested", needall:"All devices must connect before saving.",
     del:"remove", needgw:"Enter the gateway IP.",
   },
   pt: {
@@ -115,11 +115,11 @@ const T = {
     gateway:"Gateway", gwname:"Nome", ip:"Endereço IP",
     aps:"Access points", addap:"+ Adicionar access point", apname:"Nome",
     access:"Acesso", accesshint:"Informe a senha do root do roteador. Ela é usada só uma vez para instalar a chave e nunca é gravada.",
-    pwd:"senha do root (a mesma para todos os aparelhos)", showkey:"Mostrar chave pública",
+    pwd:"senha do root", pwd_one:"senha do root", showkey:"Mostrar chave pública",
     keyhint:"Se a instalação automática falhar, adicione esta chave em /etc/dropbear/authorized_keys de cada aparelho.",
     test:"Testar & instalar chave", testing:"testando…", save:"Salvar & iniciar",
     saving:"salvando…", saved:"Salvo! Iniciando…",
-    ok:"conectado", pending:"não testado", needall:"Todos os aparelhos precisam conectar antes de salvar.",
+    ok:"conectado", radios:"rádios", pending:"não testado", needall:"Todos os aparelhos precisam conectar antes de salvar.",
     del:"remover", needgw:"Informe o IP do gateway.",
   },
 };
@@ -133,11 +133,17 @@ const t = k => (T[lang] && T[lang][k]) || T.en[k] || k;
 
 let aps = [];          // [{name,host,ok}]
 let gwOk = false;
+let gwRadios = [];
 
-function api(path, body){
+function api(path, body, timeoutMs){
+  const ctrl = new AbortController();
+  const to = timeoutMs ? setTimeout(()=>ctrl.abort(), timeoutMs) : null;
   return fetch(path, {method: body?"POST":"GET",
     headers:{"Content-Type":"application/json"},
-    body: body?JSON.stringify(body):undefined}).then(r=>r.json());
+    body: body?JSON.stringify(body):undefined, signal:ctrl.signal})
+    .then(r=>r.json())
+    .catch(()=>({ok:false, detail:"tempo esgotado"}))
+    .finally(()=>{ if(to) clearTimeout(to); });
 }
 
 function renderLangs(){
@@ -154,7 +160,7 @@ function applyLang(){
   $("t_ip").textContent=t("ip");
   $("t_aps").textContent=t("aps"); $("addap").textContent=t("addap");
   $("t_access").textContent=t("access"); $("t_accesshint").textContent=t("accesshint");
-  $("t_pwd").textContent=t("pwd"); $("t_showkey").textContent=t("showkey");
+  $("t_gwpwd").textContent=t("pwd_one"); $("t_showkey").textContent=t("showkey");
   $("t_keyhint").textContent=t("keyhint");
   $("testbtn").textContent=t("test"); $("savebtn").textContent=t("save");
   renderAps();
@@ -173,7 +179,9 @@ function renderAps(){
         <div class="grow"><label>${t("ip")}</label>
           <input data-f="host" data-i="${i}" value="${a.host||''}" placeholder="192.168.20.${i+2}"></div>
       </div>
-      <div class="status ${a.ok?'ok':'pend'}">${a.ok?('✓ '+t("ok")):(a.tested?('✗ '+(a.detail||'')):t("pending"))}</div>
+      <label>${t("pwd_one")}</label>
+      <input type="password" data-f="pwd" data-i="${i}" value="${a.pwd||''}" placeholder="••••••••">
+      <div class="status ${a.testing?'pend':(a.ok?'ok':(a.tested?'bad':'pend'))}">${a.testing?t("testing"):(a.ok?('✓ '+t("ok")+((a.radios&&a.radios.length)?` (${a.radios.length} ${t("radios")})`:'')):(a.tested?('✗ '+(a.detail||'')):t("pending")))}</div>
     </div>`).join("");
   $("aps").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{
     aps[inp.dataset.i][inp.dataset.f]=inp.value; if(inp.dataset.f==='host'){aps[inp.dataset.i].ok=false;refreshSave();}
@@ -192,22 +200,21 @@ function refreshSave(){
   $("savestatus").textContent="";
 }
 async function testAll(){
-  const pwd=$("pwd").value;
   $("testbtn").disabled=true; const orig=$("testbtn").textContent; $("testbtn").textContent=t("testing");
   // gateway
   const gwhost=$("gwhost").value.trim();
   if(gwhost){
-    $("gwstatus").className="status pend"; $("gwstatus").textContent="…";
-    const r=await api("/api/setup/test-host",{host:gwhost,password:pwd});
-    gwOk=r.ok; $("gwstatus").className="status "+(r.ok?"ok":"bad");
-    $("gwstatus").textContent=(r.ok?"✓ "+t("ok"):"✗ "+(r.detail||""));
+    $("gwstatus").className="status pend"; $("gwstatus").textContent=t("testing");
+    const r=await api("/api/setup/test-host",{host:gwhost,password:$("gwpwd").value},15000);
+    gwOk=r.ok; gwRadios=r.radios||[]; $("gwstatus").className="status "+(r.ok?"ok":"bad");
+    $("gwstatus").textContent=(r.ok?("✓ "+t("ok")+(gwRadios.length?` (${gwRadios.length} ${t("radios")})`:"")):"✗ "+(r.detail||""));
   }
   // aps
   for(const a of aps){
     if(!a.host){a.ok=false;a.tested=false;continue;}
-    a.tested=true; renderAps();
-    const r=await api("/api/setup/test-host",{host:a.host,password:pwd});
-    a.ok=r.ok; a.detail=r.detail; renderAps();
+    a.testing=true; renderAps();
+    const r=await api("/api/setup/test-host",{host:a.host,password:a.pwd||""},15000);
+    a.testing=false; a.tested=true; a.ok=r.ok; a.detail=r.detail; a.radios=r.radios||[]; renderAps();
   }
   $("testbtn").disabled=false; $("testbtn").textContent=orig;
   refreshSave();
@@ -217,8 +224,8 @@ async function save(){
   $("savestatus").textContent=t("saving");
   const payload={
     language:lang, network_name:$("netname").value.trim(),
-    gateway:{name:$("gwname").value.trim()||"Gateway",host:$("gwhost").value.trim()},
-    aps:aps.filter(a=>a.host).map(a=>({name:a.name,host:a.host})),
+    gateway:{name:$("gwname").value.trim()||"Gateway",host:$("gwhost").value.trim(),radios:gwRadios},
+    aps:aps.filter(a=>a.host).map(a=>({name:a.name,host:a.host,radios:a.radios||[]})),
   };
   const r=await api("/api/setup/save",payload);
   if(r.ok){$("savestatus").className="status ok";$("savestatus").textContent=t("saved");
@@ -238,7 +245,8 @@ async function init(){
     if(cfg && cfg.gateway){
       lang=cfg.language||lang; $("netname").value=cfg.network_name||"";
       $("gwname").value=cfg.gateway.name||""; $("gwhost").value=cfg.gateway.host||"";
-      aps=(cfg.aps||[]).map(a=>({name:a.name,host:a.host,ok:false}));
+      aps=(cfg.aps||[]).map(a=>({name:a.name,host:a.host,radios:a.radios||[],ok:false}));
+      gwRadios=(cfg.gateway&&cfg.gateway.radios)||[];
     }
   }catch(e){}
   // gera/obtém a chave pública
