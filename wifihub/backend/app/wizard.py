@@ -164,7 +164,15 @@ async def install_deps(host: str, packages: list, user: str = "root",
             client_keys=[provisioning.SSH_KEY_PATH],
             known_hosts=None, connect_timeout=_CONNECT_TIMEOUT,
         ) as conn:
-            cmd = f"opkg update >/dev/null 2>&1; opkg install {pkgs} 2>&1 | tail -5"
+            # OpenWrt novo (24.10+) usa apk; o antigo usa opkg
+            which = await asyncio.wait_for(conn.run(
+                "command -v apk >/dev/null 2>&1 && echo apk || echo opkg",
+                check=False), 10)
+            mgr = (which.stdout or "").strip()
+            if mgr == "apk":
+                cmd = f"apk update >/dev/null 2>&1; apk add {pkgs} 2>&1 | tail -5"
+            else:
+                cmd = f"opkg update >/dev/null 2>&1; opkg install {pkgs} 2>&1 | tail -5"
             await asyncio.wait_for(conn.run(cmd, check=False), 100)
         still = await detect_deps(host, user, port)
         ok = not any(p in still for p in (packages or []))

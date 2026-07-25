@@ -91,6 +91,10 @@ recomendado, **`iwinfo`**). O próprio assistente **detecta o que falta e instal
 você** via `opkg`. Manualmente seria:
 
 ```
+# OpenWrt novo (24.10+): usa apk
+apk add iw iwinfo nlbwmon
+
+# OpenWrt antigo: usa opkg
 opkg update && opkg install iw iwinfo nlbwmon
 ```
 

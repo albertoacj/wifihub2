@@ -36,5 +36,9 @@ Base do OpenWrt (já presente): ubus, uci, dnsmasq, ip.
 Instalação manual, se preferir:
 
 ```
+# OpenWrt novo (24.10+): usa apk
+apk add iw iwinfo nlbwmon
+
+# OpenWrt antigo: usa opkg
 opkg update && opkg install iw iwinfo nlbwmon
 ```
