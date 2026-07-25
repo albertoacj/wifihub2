@@ -18,7 +18,7 @@ from . import provisioning
 
 log = logging.getLogger("wifihub.wizard")
 
-_CONNECT_TIMEOUT = 12
+_CONNECT_TIMEOUT = 8
 
 
 def gen_keypair() -> str:
@@ -95,20 +95,60 @@ async def verify_key(host: str, user: str, port: int = 22) -> bool:
         return "wifihub-ok" in (res.stdout or "")
 
 
+async def _reachable(host: str, port: int, timeout: float = 3.0) -> bool:
+    """Teste rápido de alcance (TCP). Evita esperar o timeout inteiro do SSH
+    quando o IP está errado/inacessível."""
+    try:
+        _, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=timeout)
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:
+            pass
+        return True
+    except Exception:
+        return False
+
+
+async def detect_radios(host: str, user: str = "root", port: int = 22) -> list:
+    """Detecta as interfaces hostapd (rádios) do AP — ex.: phy0-ap0, phy1-ap0.
+    É o que o coletor usa para associar os clientes wifi a cada AP."""
+    try:
+        async with asyncssh.connect(
+            host, port=port, username=user,
+            client_keys=[provisioning.SSH_KEY_PATH],
+            known_hosts=None, connect_timeout=_CONNECT_TIMEOUT,
+        ) as conn:
+            res = await asyncio.wait_for(
+                conn.run("ubus list | grep '^hostapd\\.'", check=False), 12)
+            return [l.strip().split("hostapd.", 1)[1]
+                    for l in (res.stdout or "").splitlines()
+                    if l.strip().startswith("hostapd.")]
+    except Exception as exc:
+        log.warning("detect_radios %s: %s", host, exc)
+        return []
+
+
 async def test_and_install(host: str, user: str, password: str,
                            port: int = 22) -> dict:
-    """Instala a chave via senha e verifica. Devolve {ok, detail}."""
+    """Instala a chave via senha, verifica e detecta os rádios. {ok, detail, radios}."""
+    # Falha rápido se o host nem responde (IP errado / desligado).
+    if not await _reachable(host, port):
+        return {"ok": False, "detail": "host inacessível (verifique o IP)"}
     try:
         # Se a chave já funciona, nem precisa da senha.
         try:
             if await verify_key(host, user, port):
-                return {"ok": True, "detail": "chave já ativa"}
+                radios = await detect_radios(host, user, port)
+                return {"ok": True, "detail": "chave já ativa", "radios": radios}
         except Exception:
             pass  # ainda não tem a chave — segue para instalar
 
         await install_key(host, user, password, port)
         if await verify_key(host, user, port):
-            return {"ok": True, "detail": "chave instalada"}
+            radios = await detect_radios(host, user, port)
+            return {"ok": True, "detail": "chave instalada", "radios": radios}
         return {"ok": False, "detail": "chave instalada, mas a verificação falhou"}
     except asyncssh.PermissionDenied:
         return {"ok": False, "detail": "senha incorreta"}

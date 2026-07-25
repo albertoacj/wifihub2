@@ -646,6 +646,7 @@ async def api_setup_save(payload: dict):
             "name": gw.get("name") or "Gateway",
             "host": str(gw.get("host", "")).strip(),
             "user": gw.get("user") or "root",
+            "radios": gw.get("radios") or [],
         },
         "aps": [
             {"id": a.get("id") or f"ap{i+1}",
