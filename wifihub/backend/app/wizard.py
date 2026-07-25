@@ -130,25 +130,74 @@ async def detect_radios(host: str, user: str = "root", port: int = 22) -> list:
         return []
 
 
+_PKG_BIN = {"iw": "iw", "iwinfo": "iwinfo", "nlbwmon": "nlbw"}  # pacote -> binário
+
+
+async def detect_deps(host: str, user: str = "root", port: int = 22) -> list:
+    """Lista de PACOTES recomendados que estão FALTANDO no aparelho."""
+    try:
+        async with asyncssh.connect(
+            host, port=port, username=user,
+            client_keys=[provisioning.SSH_KEY_PATH],
+            known_hosts=None, connect_timeout=_CONNECT_TIMEOUT,
+        ) as conn:
+            checks = " ; ".join(
+                f'command -v {b} >/dev/null 2>&1 && echo "{p}=1" || echo "{p}=0"'
+                for p, b in _PKG_BIN.items())
+            res = await asyncio.wait_for(conn.run(checks, check=False), 12)
+            out = res.stdout or ""
+            return [p for p in _PKG_BIN if f"{p}=0" in out]
+    except Exception as exc:
+        log.warning("detect_deps %s: %s", host, exc)
+        return []
+
+
+async def install_deps(host: str, packages: list, user: str = "root",
+                       port: int = 22) -> dict:
+    """opkg update + install dos pacotes pedidos; re-checa e devolve o que falta."""
+    pkgs = " ".join(p for p in (packages or []) if p in _PKG_BIN)
+    if not pkgs:
+        return {"ok": False, "detail": "nada a instalar", "missing": []}
+    try:
+        async with asyncssh.connect(
+            host, port=port, username=user,
+            client_keys=[provisioning.SSH_KEY_PATH],
+            known_hosts=None, connect_timeout=_CONNECT_TIMEOUT,
+        ) as conn:
+            cmd = f"opkg update >/dev/null 2>&1; opkg install {pkgs} 2>&1 | tail -5"
+            await asyncio.wait_for(conn.run(cmd, check=False), 100)
+        still = await detect_deps(host, user, port)
+        ok = not any(p in still for p in (packages or []))
+        return {"ok": ok,
+                "detail": "instalado" if ok else "ainda falta: " + ", ".join(still),
+                "missing": still}
+    except (asyncssh.Error, OSError, asyncio.TimeoutError) as exc:
+        return {"ok": False, "detail": f"falha: {exc}", "missing": packages}
+
+
 async def test_and_install(host: str, user: str, password: str,
                            port: int = 22) -> dict:
-    """Instala a chave via senha, verifica e detecta os rádios. {ok, detail, radios}."""
-    # Falha rápido se o host nem responde (IP errado / desligado).
+    """Instala a chave, verifica, detecta rádios e dependências faltantes."""
     if not await _reachable(host, port):
         return {"ok": False, "detail": "host inacessível (verifique o IP)"}
+
+    async def _enrich(detail):
+        radios = await detect_radios(host, user, port)
+        missing = await detect_deps(host, user, port)
+        # iw/iwinfo só importam onde há wifi (evita alarme falso em gateway sem rádio)
+        if not radios:
+            missing = [p for p in missing if p not in ("iw", "iwinfo")]
+        return {"ok": True, "detail": detail, "radios": radios, "missing": missing}
+
     try:
-        # Se a chave já funciona, nem precisa da senha.
         try:
             if await verify_key(host, user, port):
-                radios = await detect_radios(host, user, port)
-                return {"ok": True, "detail": "chave já ativa", "radios": radios}
+                return await _enrich("chave já ativa")
         except Exception:
-            pass  # ainda não tem a chave — segue para instalar
-
+            pass
         await install_key(host, user, password, port)
         if await verify_key(host, user, port):
-            radios = await detect_radios(host, user, port)
-            return {"ok": True, "detail": "chave instalada", "radios": radios}
+            return await _enrich("chave instalada")
         return {"ok": False, "detail": "chave instalada, mas a verificação falhou"}
     except asyncssh.PermissionDenied:
         return {"ok": False, "detail": "senha incorreta"}

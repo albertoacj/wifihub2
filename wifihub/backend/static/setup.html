@@ -67,6 +67,7 @@
     <label id="t_gwpwd"></label>
     <input id="gwpwd" type="password" placeholder="••••••••">
     <div class="status pend" id="gwstatus"></div>
+    <div id="gwdeps"></div>
   </div>
 
   <div class="card">
@@ -106,7 +107,7 @@ const T = {
     keyhint:"If automatic install fails, add this key to /etc/dropbear/authorized_keys on each device.",
     test:"Test & install key", testing:"testing…", save:"Save & start",
     saving:"saving…", saved:"Saved! Starting…",
-    ok:"connected", radios:"radios", pending:"not tested", needall:"All devices must connect before saving.",
+    ok:"connected", radios:"radios", depsmiss:"missing", installdeps:"Install", installing:"installing…", pending:"not tested", needall:"All devices must connect before saving.",
     del:"remove", needgw:"Enter the gateway IP.",
   },
   pt: {
@@ -119,7 +120,7 @@ const T = {
     keyhint:"Se a instalação automática falhar, adicione esta chave em /etc/dropbear/authorized_keys de cada aparelho.",
     test:"Testar & instalar chave", testing:"testando…", save:"Salvar & iniciar",
     saving:"salvando…", saved:"Salvo! Iniciando…",
-    ok:"conectado", radios:"rádios", pending:"não testado", needall:"Todos os aparelhos precisam conectar antes de salvar.",
+    ok:"conectado", radios:"rádios", depsmiss:"falta", installdeps:"Instalar", installing:"instalando…", pending:"não testado", needall:"Todos os aparelhos precisam conectar antes de salvar.",
     del:"remover", needgw:"Informe o IP do gateway.",
   },
 };
@@ -134,6 +135,7 @@ const t = k => (T[lang] && T[lang][k]) || T.en[k] || k;
 let aps = [];          // [{name,host,ok}]
 let gwOk = false;
 let gwRadios = [];
+let gwMissing = [];
 
 function api(path, body, timeoutMs){
   const ctrl = new AbortController();
@@ -182,11 +184,29 @@ function renderAps(){
       <label>${t("pwd_one")}</label>
       <input type="password" data-f="pwd" data-i="${i}" value="${a.pwd||''}" placeholder="••••••••">
       <div class="status ${a.testing?'pend':(a.ok?'ok':(a.tested?'bad':'pend'))}">${a.testing?t("testing"):(a.ok?('✓ '+t("ok")+((a.radios&&a.radios.length)?` (${a.radios.length} ${t("radios")})`:'')):(a.tested?('✗ '+(a.detail||'')):t("pending")))}</div>
+      ${depsRow(a.missing,"ap",i)}
     </div>`).join("");
   $("aps").querySelectorAll("input").forEach(inp=>inp.oninput=()=>{
     aps[inp.dataset.i][inp.dataset.f]=inp.value; if(inp.dataset.f==='host'){aps[inp.dataset.i].ok=false;refreshSave();}
   });
   $("aps").querySelectorAll(".del").forEach(b=>b.onclick=()=>{aps.splice(+b.dataset.i,1);renderAps();refreshSave();});
+  wireDepBtns();
+}
+function depsRow(missing, kind, i){
+  if(!missing || !missing.length) return "";
+  return `<div class="status bad">⚠ ${t("depsmiss")}: ${missing.join(", ")} <button class="btn small" data-dep="${kind}" data-i="${i==null?'':i}" style="margin-left:8px">${t("installdeps")}</button></div>`;
+}
+function renderGwDeps(){ $("gwdeps").innerHTML=depsRow(gwMissing,"gw",null); wireDepBtns(); }
+function wireDepBtns(){ document.querySelectorAll("[data-dep]").forEach(b=>b.onclick=()=>installDeps(b)); }
+async function installDeps(btn){
+  const kind=btn.dataset.dep;
+  const host = kind==="gw" ? $("gwhost").value.trim() : aps[+btn.dataset.i].host;
+  const missing = kind==="gw" ? gwMissing : (aps[+btn.dataset.i].missing||[]);
+  btn.disabled=true; btn.textContent=t("installing");
+  const r=await api("/api/setup/install-deps",{host,packages:missing},120000);
+  const still=r.missing||[];
+  if(kind==="gw"){ gwMissing=still; renderGwDeps(); }
+  else { aps[+btn.dataset.i].missing=still; renderAps(); }
 }
 function gwStatus(){
   const el=$("gwstatus");
@@ -208,13 +228,14 @@ async function testAll(){
     const r=await api("/api/setup/test-host",{host:gwhost,password:$("gwpwd").value},15000);
     gwOk=r.ok; gwRadios=r.radios||[]; $("gwstatus").className="status "+(r.ok?"ok":"bad");
     $("gwstatus").textContent=(r.ok?("✓ "+t("ok")+(gwRadios.length?` (${gwRadios.length} ${t("radios")})`:"")):"✗ "+(r.detail||""));
+    gwMissing=r.missing||[]; renderGwDeps();
   }
   // aps
   for(const a of aps){
     if(!a.host){a.ok=false;a.tested=false;continue;}
     a.testing=true; renderAps();
     const r=await api("/api/setup/test-host",{host:a.host,password:a.pwd||""},15000);
-    a.testing=false; a.tested=true; a.ok=r.ok; a.detail=r.detail; a.radios=r.radios||[]; renderAps();
+    a.testing=false; a.tested=true; a.ok=r.ok; a.detail=r.detail; a.radios=r.radios||[]; a.missing=r.missing||[]; renderAps();
   }
   $("testbtn").disabled=false; $("testbtn").textContent=orig;
   refreshSave();

@@ -632,6 +632,18 @@ async def api_setup_test_host(payload: dict):
     return await wizard.test_and_install(host, user, password, port)
 
 
+@app.post("/api/setup/install-deps")
+async def api_setup_install_deps(payload: dict):
+    """Instala pacotes recomendados (iw/iwinfo/nlbwmon) num aparelho via opkg."""
+    host = str(payload.get("host", "")).strip()
+    if not host:
+        raise HTTPException(400, "informe o host")
+    user = payload.get("user") or "root"
+    port = int(payload.get("port", 22) or 22)
+    packages = payload.get("packages") or []
+    return await wizard.install_deps(host, packages, user, port)
+
+
 @app.post("/api/setup/save")
 async def api_setup_save(payload: dict):
     """Grava o setup.json, recarrega a config e liga o coletor ao vivo."""
