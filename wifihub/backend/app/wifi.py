@@ -35,6 +35,7 @@ def parse_station_dump(text: str) -> dict[str, dict]:
         if m:
             cur = m.group(1).lower()
             stations[cur] = {"rx_bytes": 0, "tx_bytes": 0, "signal": 0,
+                             "inactive": 10**9,
                              "connected": 0, "tx_rate": 0.0, "rx_rate": 0.0}
             continue
         if cur is None:
@@ -46,6 +47,8 @@ def parse_station_dump(text: str) -> dict[str, dict]:
             stations[cur]["tx_bytes"] = _num(s)
         elif s.startswith("signal:") and "avg" not in s:
             stations[cur]["signal"] = _num(s)
+        elif s.startswith("inactive time:"):
+            stations[cur]["inactive"] = _num(s)
         elif s.startswith("connected time:"):
             stations[cur]["connected"] = _num(s)
         elif s.startswith("tx bitrate:"):

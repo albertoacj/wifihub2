@@ -175,6 +175,7 @@ async def _poll_ap(ap, leases, neigh, now, stamp):
             "band": d.get("band"),
             "signal": d.get("signal", 0),
             "connected": d.get("connected", 0),
+            "inactive": d.get("inactive", 10**9),
             "rx_rate": round(up, 1),      # upload
             "tx_rate": round(down, 1),    # download
         })
@@ -261,6 +262,22 @@ async def _collect_once():
         points.extend(pts)
         total_clients += entry["client_count"]
         aps_out.append(entry)
+
+    # Fast roaming: por alguns segundos o mesmo cliente aparece em 2 APs (a
+    # associação antiga ainda não expirou). Mantém cada MAC só no AP onde está
+    # mais ATIVO — menor "inactive time"; desempate por melhor sinal — e remove
+    # a associação fantasma do AP antigo (que some do card e da contagem).
+    _best = {}
+    for _ai, _a in enumerate(aps_out):
+        for _c in _a.get("clients", []):
+            _key = (_c.get("inactive", 10**9), -(_c.get("signal") or -999))
+            if _c["mac"] not in _best or _key < _best[_c["mac"]][0]:
+                _best[_c["mac"]] = (_key, _ai)
+    for _ai, _a in enumerate(aps_out):
+        _a["clients"] = [c for c in _a.get("clients", [])
+                         if _best.get(c["mac"], (None, _ai))[1] == _ai]
+        _a["client_count"] = len(_a["clients"])
+    total_clients = sum(a.get("client_count", 0) for a in aps_out)
 
     router["clients_total"] = total_clients
 
