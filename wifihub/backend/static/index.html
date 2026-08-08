@@ -1518,6 +1518,7 @@ function App(){
       <button class=${"tab"+(tab==="fw"?" active":"")} onClick=${()=>setTab("fw")}>Regras Firewall</button>
       <button class=${"tab"+(tab==="iot"?" active":"")} onClick=${()=>setTab("iot")}>Fixar IoT</button>
       <button class=${"tab"+(tab==="zigbee"?" active":"")} onClick=${()=>setTab("zigbee")}>Zigbee</button>
+      <button class="tab" onClick=${()=>location.href=(window.__INGRESS__||"")+"/setup"}>Config</button>
     </div>
 
     ${tab==="rede" ? html`
