@@ -205,6 +205,7 @@ async function installDeps(btn){
   btn.disabled=true; btn.textContent=t("installing");
   const r=await api("/api/setup/install-deps",{host,packages:missing},120000);
   const still=r.missing||[];
+  if(!r.ok && r.detail){ alert(r.detail); }   // mostra o erro real do apk/opkg
   if(kind==="gw"){ gwMissing=still; renderGwDeps(); }
   else { aps[+btn.dataset.i].missing=still; renderAps(); }
 }
@@ -225,7 +226,7 @@ async function testAll(){
   const gwhost=$("gwhost").value.trim();
   if(gwhost){
     $("gwstatus").className="status pend"; $("gwstatus").textContent=t("testing");
-    const r=await api("/api/setup/test-host",{host:gwhost,password:$("gwpwd").value},15000);
+    const r=await api("/api/setup/test-host",{host:gwhost,password:$("gwpwd").value,gateway:true},15000);
     gwOk=r.ok; gwRadios=r.radios||[]; $("gwstatus").className="status "+(r.ok?"ok":"bad");
     $("gwstatus").textContent=(r.ok?("✓ "+t("ok")+(gwRadios.length?` (${gwRadios.length} ${t("radios")})`:"")):"✗ "+(r.detail||""));
     gwMissing=r.missing||[]; renderGwDeps();

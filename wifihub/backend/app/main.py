@@ -466,10 +466,12 @@ async def api_zigbee_set(payload: dict):
 async def api_usage(period: str = "day"):
     """Consumo por dispositivo: period = day | week | month."""
     # (janela, agregação, usa_histórico)
+    # o bucket ao vivo tem retenção de 30d, então week/7d e month/30d cabem nele;
+    # só o year/365d depende do histórico permanente (task de downsampling).
     cfg = {
         "day":   ("24h",  "1h", False),   # detalhe fino, bucket ao vivo
-        "week":  ("7d",   "1d", True),
-        "month": ("30d",  "1d", True),
+        "week":  ("7d",   "1d", False),
+        "month": ("30d",  "1d", False),
         "year":  ("365d", "30d", True),   # só existe graças ao histórico permanente
     }
     if period not in cfg:
@@ -629,7 +631,8 @@ async def api_setup_test_host(payload: dict):
     user = (str(payload.get("user", "root")).strip() or "root")
     password = str(payload.get("password", ""))
     port = int(payload.get("port", 22) or 22)
-    return await wizard.test_and_install(host, user, password, port)
+    is_gateway = bool(payload.get("gateway"))
+    return await wizard.test_and_install(host, user, password, port, is_gateway)
 
 
 @app.post("/api/setup/install-deps")

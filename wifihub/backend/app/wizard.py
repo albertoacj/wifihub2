@@ -184,7 +184,7 @@ async def install_deps(host: str, packages: list, user: str = "root",
 
 
 async def test_and_install(host: str, user: str, password: str,
-                           port: int = 22) -> dict:
+                           port: int = 22, is_gateway: bool = False) -> dict:
     """Instala a chave, verifica, detecta rádios e dependências faltantes."""
     if not await _reachable(host, port):
         return {"ok": False, "detail": "host inacessível (verifique o IP)"}
@@ -195,6 +195,9 @@ async def test_and_install(host: str, user: str, password: str,
         # iw/iwinfo só importam onde há wifi (evita alarme falso em gateway sem rádio)
         if not radios:
             missing = [p for p in missing if p not in ("iw", "iwinfo")]
+        # nlbwmon só conta consumo no gateway (dumb APs bridgeiam; não medem nada)
+        if not is_gateway:
+            missing = [p for p in missing if p != "nlbwmon"]
         return {"ok": True, "detail": detail, "radios": radios, "missing": missing}
 
     try:
